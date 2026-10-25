@@ -1,5 +1,4 @@
-  import React, { useEffect, useState } from 'react';
-  import {
+import React from 'react'; // Or import React, { useState, useEffect } from 'react';  import {
     Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
     Menu, Moon, Package, ShoppingCart, Sun, Users, X
   } from 'lucide-react';
