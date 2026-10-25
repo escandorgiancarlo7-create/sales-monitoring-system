@@ -54,25 +54,21 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   );
   
   const employee = rows[0];
-  console.log('--- LOGIN DEBUG ---', {
-    email,
-    employeeFound: !!employee,
-    dbHashPresent: Boolean(employee?.password_hash)
-  });
-  
-  if (!employee || !employee.active) {
+
+  if (!employee) {
+    console.warn('[auth] Login rejected: account not found.');
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  if (!employee.active) {
+    console.warn('[auth] Login rejected: account inactive.');
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
   const isMatch = await bcrypt.compare(String(password), employee.password_hash);
-  console.log('--- PASSWORD CHECK ---', {
-    passwordProvided: typeof password === 'string' && password.length > 0,
-    hashPresent: Boolean(employee.password_hash),
-    isMatch,
-    isActive: employee.active
-  });
 
   if (!isMatch) {
+    console.warn('[auth] Login rejected: password verification failed.');
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
