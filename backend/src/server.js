@@ -55,11 +55,16 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
     'SELECT id, name, email, role, password_hash, active FROM employees WHERE email = ?',
     [normalizedEmail]
   );
+  const employee = employees[0];
+  let customer = null;
 
-  if (employees.length) {
-    const employee = employees[0];
-    const isMatch = employee.active && await bcrypt.compare(String(password), employee.password_hash);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+  if (employee) {
+    const isMatch = Number(employee.active) === 1 && employee.password_hash &&
+      await bcrypt.compare(String(password), employee.password_hash);
+    if (!isMatch) {
+      console.log('Login failed for:', email, 'Employee found:', !!employee, 'Customer found:', !!customer);
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
 
     const token = jwt.sign(
       { sub: employee.id, role: employee.role },
@@ -73,12 +78,16 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   }
 
   const [customers] = await pool.execute(
-    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? AND active = 1 AND password_hash IS NOT NULL ORDER BY id DESC LIMIT 1',
+    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id DESC LIMIT 1',
     [normalizedEmail]
   );
-  const customer = customers[0];
-  const isCustomerMatch = customer && await bcrypt.compare(String(password), customer.password_hash);
-  if (!isCustomerMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+  customer = customers[0];
+  const isCustomerMatch = customer && Number(customer.active) === 1 && customer.password_hash &&
+    await bcrypt.compare(String(password), customer.password_hash);
+  if (!isCustomerMatch) {
+    console.log('Login failed for:', email, 'Employee found:', !!employee, 'Customer found:', !!customer);
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
 
   const token = jwt.sign(
     { sub: customer.id, role: 'customer' },
