@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
   Menu, Moon, Package, ShoppingCart, Sun, Users, X
@@ -60,11 +60,31 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const cancelLogoutRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
     localStorage.setItem('sales-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!showLogoutModal) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    cancelLogoutRef.current?.focus();
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setShowLogoutModal(false);
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showLogoutModal]);
 
   useEffect(() => {
     if (!localStorage.getItem('sales-token')) return;
@@ -74,8 +94,8 @@ export default function App() {
   }, []);
 
   function logout() {
-    if (!window.confirm('Are you sure you want to log out?')) return;
     localStorage.removeItem('sales-token');
+    setShowLogoutModal(false);
     setUser(null);
     setPage('dashboard');
   }
@@ -117,7 +137,7 @@ export default function App() {
         <div className="sidebar-profile">
           <div className="avatar">{user.name.split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</div>
           <div className="profile-meta"><strong>{user.name}</strong><small>{user.role}</small></div>
-          <button title="Sign out" aria-label="Sign out" className="icon-button text-secondary" onClick={logout}><LogOut size={17} /></button>
+          <button title="Sign out" aria-label="Sign out" className="icon-button text-secondary" onClick={() => setShowLogoutModal(true)}><LogOut size={17} /></button>
         </div>
       </div>
     </aside>
@@ -146,5 +166,50 @@ export default function App() {
         {content}
       </section>
     </main>
+    {showLogoutModal && (
+      <div className="logout-modal-layer">
+        <button
+          className="logout-modal-backdrop"
+          type="button"
+          aria-label="Close logout confirmation"
+          onClick={() => setShowLogoutModal(false)}
+        />
+        <div className="modal-dialog modal-dialog-centered logout-modal-dialog">
+          <div
+            className="modal-content border-0 rounded-4 shadow-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-modal-title"
+            aria-describedby="logout-modal-description"
+          >
+            <div className="modal-header border-0 pb-0">
+              <h2 className="modal-title fs-5 fw-semibold" id="logout-modal-title">Confirm Logout</h2>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={() => setShowLogoutModal(false)}
+              />
+            </div>
+            <div className="modal-body text-secondary" id="logout-modal-description">
+              Are you sure you want to end your session?
+            </div>
+            <div className="modal-footer border-0 pt-0">
+              <button
+                ref={cancelLogoutRef}
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={logout}>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   </div>;
 }

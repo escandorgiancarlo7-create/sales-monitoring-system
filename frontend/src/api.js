@@ -19,9 +19,9 @@ export async function api(path, options = {}) {
   return data;
 }
 
-export const money = (value) => new Intl.NumberFormat(undefined, {
+export const money = (value) => new Intl.NumberFormat('en-PH', {
   style: 'currency',
-  currency: 'USD'
+  currency: 'PHP'
 }).format(Number(value || 0));
 
 export const dateTime = (value) => value
