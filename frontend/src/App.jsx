@@ -9,6 +9,7 @@ import { DataPage } from './pages/DataPage.jsx';
 import { InventoryPage } from './pages/InventoryPage.jsx';
 import { SalesPage } from './pages/SalesPage.jsx';
 import { ReportsPage } from './pages/ReportsPage.jsx';
+import { CustomerStorefront } from './pages/CustomerStorefront.jsx';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -138,6 +139,7 @@ export default function App() {
     />
     {loadError && <div className="login-toast">{loadError}</div>}
   </>;
+  if (user.role === 'customer') return <CustomerStorefront user={user} onLogout={logout} />;
 
   const visibleNav = navItems.filter(item => !item.roles || item.roles.includes(user.role));
   const heading = visibleNav.find(item => item.id === page)?.label || 'Dashboard';
