@@ -11,6 +11,8 @@ const app = express();
 const port = Number(process.env.PORT || 4000);
 const adminRoles = allowRoles('admin', 'manager');
 const adminOnly = allowRoles('admin');
+const employeeOnly = allowRoles('admin', 'manager', 'cashier');
+const customerOnly = allowRoles('customer');
 
 app.use(helmet());
 
@@ -37,7 +39,7 @@ app.use(express.json({ limit: '1mb' }));
 
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const required = (value) => value !== undefined && value !== null && String(value).trim() !== '';
-const positiveInteger = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+const positiveInteger = (value) => Number.isSafeInteger(Number(value)) && Number(value) > 0;
 
 app.get('/api/health', asyncRoute(async (_req, res) => {
   await pool.query('SELECT 1');
@@ -47,39 +49,168 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
 app.post('/api/auth/login', asyncRoute(async (req, res) => {
   const { email, password } = req.body || {};
   if (!required(email) || !required(password)) return res.status(400).json({ error: 'Email and password are required.' });
-  
-  const [rows] = await pool.execute(
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const [employees] = await pool.execute(
     'SELECT id, name, email, role, password_hash, active FROM employees WHERE email = ?',
-    [String(email).trim().toLowerCase()]
+    [normalizedEmail]
   );
-  
-  const employee = rows[0];
 
-  if (!employee) {
-    console.warn('[auth] Login rejected: account not found.');
-    return res.status(401).json({ error: 'Invalid email or password.' });
+  if (employees.length) {
+    const employee = employees[0];
+    const isMatch = employee.active && await bcrypt.compare(String(password), employee.password_hash);
+    if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+
+    const token = jwt.sign(
+      { sub: employee.id, role: employee.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    );
+    return res.json({
+      token,
+      user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
+    });
   }
 
-  if (!employee.active) {
-    console.warn('[auth] Login rejected: account inactive.');
-    return res.status(401).json({ error: 'Invalid email or password.' });
-  }
+  const [customers] = await pool.execute(
+    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id LIMIT 1',
+    [normalizedEmail]
+  );
+  const customer = customers[0];
+  const isCustomerMatch = customer?.active && customer.password_hash &&
+    await bcrypt.compare(String(password), customer.password_hash);
+  if (!isCustomerMatch) return res.status(401).json({ error: 'Invalid email or password.' });
 
-  const isMatch = await bcrypt.compare(String(password), employee.password_hash);
-
-  if (!isMatch) {
-    console.warn('[auth] Login rejected: password verification failed.');
-    return res.status(401).json({ error: 'Invalid email or password.' });
-  }
-
-  const token = jwt.sign({ sub: employee.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
-  res.json({ token, user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role } });
+  const token = jwt.sign(
+    { sub: customer.id, role: 'customer' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+  );
+  res.json({
+    token,
+    user: { id: customer.id, name: customer.name, email: customer.email, role: 'customer' }
+  });
 }));
 
 app.use('/api', authenticate);
 app.get('/api/auth/me', (req, res) => res.json({ user: req.user }));
 
-app.get('/api/dashboard', asyncRoute(async (_req, res) => {
+app.post('/api/customer/checkout', customerOnly, asyncRoute(async (req, res) => {
+  const { items } = req.body || {};
+  if (!Array.isArray(items) || items.length === 0 ||
+      items.some(item => !positiveInteger(item?.product_id) || !positiveInteger(item?.quantity))) {
+    return res.status(400).json({ error: 'Add at least one item with a valid product and positive whole-number quantity.' });
+  }
+
+  const quantities = new Map();
+  for (const item of items) {
+    const productId = Number(item.product_id);
+    const quantity = (quantities.get(productId) || 0) + Number(item.quantity);
+    if (!Number.isSafeInteger(quantity)) {
+      return res.status(400).json({ error: 'Item quantity is too large.' });
+    }
+    quantities.set(productId, quantity);
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const productIds = [...quantities.keys()];
+    const placeholders = productIds.map(() => '?').join(',');
+    const [products] = await connection.query(
+      `SELECT id, name, price, stock_quantity
+       FROM products
+       WHERE active = 1 AND id IN (${placeholders})
+       FOR UPDATE`,
+      productIds
+    );
+
+    if (products.length !== productIds.length) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'One or more products are unavailable.' });
+    }
+
+    let totalCents = 0;
+    for (const product of products) {
+      const quantity = quantities.get(Number(product.id));
+      if (Number(product.stock_quantity) < quantity) {
+        await connection.rollback();
+        return res.status(400).json({ error: `Insufficient stock for ${product.name}.` });
+      }
+      const priceCents = Math.round(Number(product.price) * 100);
+      totalCents += priceCents * quantity;
+      if (!Number.isSafeInteger(totalCents)) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Order total is too large.' });
+      }
+    }
+
+    const total = totalCents / 100;
+    const [sale] = await connection.execute(
+      'INSERT INTO sales (customer_id, employee_id, total, status) VALUES (?, NULL, ?, ?)',
+      [req.user.id, total, 'completed']
+    );
+
+    for (const product of products) {
+      const quantity = quantities.get(Number(product.id));
+      const priceCents = Math.round(Number(product.price) * 100);
+      const lineTotal = priceCents * quantity / 100;
+      await connection.execute(
+        'INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, line_total) VALUES (?, ?, ?, ?, ?, ?)',
+        [sale.insertId, product.id, product.name, quantity, product.price, lineTotal]
+      );
+      await connection.execute(
+        'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+        [quantity, product.id]
+      );
+      await connection.execute(
+        'INSERT INTO inventory_movements (product_id, employee_id, type, quantity, note) VALUES (?, NULL, ?, ?, ?)',
+        [product.id, 'sale', -quantity, `Customer order #${sale.insertId}`]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ id: sale.insertId, total });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}));
+
+app.get('/api/customer/orders', customerOnly, asyncRoute(async (req, res) => {
+  const [orders] = await pool.execute(
+    'SELECT id, total, status, created_at FROM sales WHERE customer_id = ? ORDER BY created_at DESC, id DESC',
+    [req.user.id]
+  );
+  if (!orders.length) return res.json([]);
+
+  const orderIds = orders.map(order => order.id);
+  const placeholders = orderIds.map(() => '?').join(',');
+  const [items] = await pool.execute(
+    `SELECT sale_id, product_name, quantity, unit_price, line_total
+     FROM sale_items
+     WHERE sale_id IN (${placeholders})
+     ORDER BY sale_id, id`,
+    orderIds
+  );
+  const itemsByOrder = new Map();
+  for (const item of items) {
+    const orderItems = itemsByOrder.get(item.sale_id) || [];
+    orderItems.push({
+      product_name: item.product_name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      line_total: item.line_total
+    });
+    itemsByOrder.set(item.sale_id, orderItems);
+  }
+
+  res.json(orders.map(order => ({ ...order, items: itemsByOrder.get(order.id) || [] })));
+}));
+
+app.get('/api/dashboard', employeeOnly, asyncRoute(async (_req, res) => {
   const [[summary]] = await pool.query(`
     SELECT
       (SELECT COALESCE(SUM(total), 0) FROM sales WHERE status = 'completed' AND DATE(created_at) = CURDATE()) AS today_sales,
@@ -108,8 +239,11 @@ app.get('/api/dashboard', asyncRoute(async (_req, res) => {
   res.json({ summary, sales, lowStock });
 }));
 
-app.get('/api/products', asyncRoute(async (_req, res) => {
-  const [rows] = await pool.query('SELECT id, sku, name, description, price, cost, stock_quantity, reorder_level, active, created_at FROM products ORDER BY name');
+app.get('/api/products', asyncRoute(async (req, res) => {
+  const query = req.user.role === 'customer'
+    ? 'SELECT id, sku, name, description, price, stock_quantity, reorder_level, active FROM products WHERE active = 1 ORDER BY name'
+    : 'SELECT id, sku, name, description, price, cost, stock_quantity, reorder_level, active, created_at FROM products ORDER BY name';
+  const [rows] = await pool.query(query);
   res.json(rows);
 }));
 
@@ -161,7 +295,7 @@ app.delete('/api/products/:id', adminOnly, asyncRoute(async (req, res) => {
   res.status(204).end();
 }));
 
-app.get('/api/inventory', asyncRoute(async (_req, res) => {
+app.get('/api/inventory', employeeOnly, asyncRoute(async (_req, res) => {
   const [rows] = await pool.query(`
     SELECT m.id, m.product_id, p.sku, p.name AS product_name, m.type, m.quantity, m.note, m.created_at, e.name AS employee_name
     FROM inventory_movements m
@@ -205,12 +339,12 @@ app.post('/api/inventory/adjustments', adminRoles, asyncRoute(async (req, res) =
   }
 }));
 
-app.get('/api/customers', asyncRoute(async (_req, res) => {
+app.get('/api/customers', employeeOnly, asyncRoute(async (_req, res) => {
   const [rows] = await pool.query('SELECT id, name, email, phone, address, created_at FROM customers WHERE active = 1 ORDER BY name');
   res.json(rows);
 }));
 
-app.post('/api/customers', asyncRoute(async (req, res) => {
+app.post('/api/customers', employeeOnly, asyncRoute(async (req, res) => {
   const { name, email = '', phone = '', address = '' } = req.body || {};
   if (!required(name)) return res.status(400).json({ error: 'Customer name is required.' });
   const [result] = await pool.execute(
@@ -220,7 +354,7 @@ app.post('/api/customers', asyncRoute(async (req, res) => {
   res.status(201).json({ id: result.insertId });
 }));
 
-app.put('/api/customers/:id', asyncRoute(async (req, res) => {
+app.put('/api/customers/:id', employeeOnly, asyncRoute(async (req, res) => {
   const { name, email = '', phone = '', address = '' } = req.body || {};
   if (!required(name)) return res.status(400).json({ error: 'Customer name is required.' });
   const [result] = await pool.execute(
@@ -231,7 +365,7 @@ app.put('/api/customers/:id', asyncRoute(async (req, res) => {
   res.json({ success: true });
 }));
 
-app.delete('/api/customers/:id', asyncRoute(async (req, res) => {
+app.delete('/api/customers/:id', employeeOnly, asyncRoute(async (req, res) => {
   const [result] = await pool.execute('UPDATE customers SET active = 0 WHERE id = ?', [req.params.id]);
   if (!result.affectedRows) return res.status(404).json({ error: 'Customer not found.' });
   res.status(204).end();
@@ -269,19 +403,19 @@ app.put('/api/employees/:id', adminOnly, asyncRoute(async (req, res) => {
   res.json({ success: true });
 }));
 
-app.get('/api/sales', asyncRoute(async (req, res) => {
+app.get('/api/sales', employeeOnly, asyncRoute(async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
   const [rows] = await pool.execute(`
     SELECT s.id, s.total, s.status, s.created_at, c.name AS customer_name, e.name AS employee_name,
            (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.id) AS item_count
     FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
-    JOIN employees e ON e.id = s.employee_id
+    LEFT JOIN employees e ON e.id = s.employee_id
     ORDER BY s.created_at DESC, s.id DESC LIMIT ?
   `, [limit]);
   res.json(rows);
 }));
 
-app.post('/api/sales', asyncRoute(async (req, res) => {
+app.post('/api/sales', employeeOnly, asyncRoute(async (req, res) => {
   const { customer_id = null, items } = req.body || {};
   if (!Array.isArray(items) || items.length === 0 || items.some((item) => !positiveInteger(item.product_id) || !positiveInteger(item.quantity))) {
     return res.status(400).json({ error: 'Add at least one item with a valid product and positive whole-number quantity.' });
@@ -343,11 +477,11 @@ app.post('/api/sales', asyncRoute(async (req, res) => {
   }
 }));
 
-app.get('/api/sales/:id', asyncRoute(async (req, res) => {
+app.get('/api/sales/:id', employeeOnly, asyncRoute(async (req, res) => {
   const [[sale]] = await pool.execute(`
     SELECT s.id, s.total, s.status, s.created_at, c.name AS customer_name, e.name AS employee_name
     FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
-    JOIN employees e ON e.id = s.employee_id WHERE s.id = ?
+    LEFT JOIN employees e ON e.id = s.employee_id WHERE s.id = ?
   `, [req.params.id]);
   if (!sale) return res.status(404).json({ error: 'Sale not found.' });
   const [items] = await pool.execute(

@@ -2,19 +2,37 @@ import jwt from 'jsonwebtoken';
 import pool from './db.js';
 
 export async function authenticate(req, res, next) {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  const authorization = req.headers.authorization || '';
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Authentication required.' });
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const [rows] = await pool.execute(
-      'SELECT id, name, email, role, active FROM employees WHERE id = ?',
-      [payload.sub]
-    );
-    if (!rows.length || !rows[0].active) return res.status(401).json({ error: 'Account is unavailable.' });
-    req.user = rows[0];
+    if (!payload || typeof payload !== 'object' || !payload.sub) {
+      return res.status(401).json({ error: 'Invalid or expired session.' });
+    }
+
+    if (payload.role === 'customer') {
+      const [customers] = await pool.execute(
+        'SELECT id, name, email, active FROM customers WHERE id = ?',
+        [payload.sub]
+      );
+      if (!customers.length || !customers[0].active) {
+        return res.status(401).json({ error: 'Account is unavailable.' });
+      }
+      req.user = { ...customers[0], role: 'customer' };
+    } else {
+      const [employees] = await pool.execute(
+        'SELECT id, name, email, role, active FROM employees WHERE id = ?',
+        [payload.sub]
+      );
+      if (!employees.length || !employees[0].active) {
+        return res.status(401).json({ error: 'Account is unavailable.' });
+      }
+      req.user = employees[0];
+    }
     next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({ error: 'Invalid or expired session.' });
     }
     next(error);
