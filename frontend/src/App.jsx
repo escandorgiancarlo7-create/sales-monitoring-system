@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
-  Menu, Package, ShoppingCart, Users, X
+  Menu, Moon, Package, ShoppingCart, Sun, Users, X
 } from 'lucide-react';
 import { api } from './api.js';
 import { Dashboard } from './pages/Dashboard.jsx';
@@ -59,6 +59,12 @@ export default function App() {
   const [page, setPage] = useState('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [theme, setTheme] = useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('sales-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!localStorage.getItem('sales-token')) return;
@@ -68,6 +74,7 @@ export default function App() {
   }, []);
 
   function logout() {
+    if (!window.confirm('Are you sure you want to log out?')) return;
     localStorage.removeItem('sales-token');
     setUser(null);
     setPage('dashboard');
@@ -79,7 +86,7 @@ export default function App() {
   const visibleNav = navItems.filter(item => !item.roles || item.roles.includes(user.role));
   const heading = visibleNav.find(item => item.id === page)?.label || 'Dashboard';
   const content = (() => {
-    if (page === 'dashboard') return <Dashboard onNavigate={setPage} />;
+    if (page === 'dashboard') return <Dashboard onNavigate={setPage} darkMode={theme === 'dark'} />;
     if (page === 'products') return <DataPage type="products" />;
     if (page === 'customers') return <DataPage type="customers" />;
     if (page === 'employees') return <DataPage type="employees" />;
@@ -123,6 +130,15 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <span className="today-label">{new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+          <button
+            className="icon-button theme-toggle"
+            type="button"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <div className="avatar avatar-small">{user.name.split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</div>
         </div>
       </header>

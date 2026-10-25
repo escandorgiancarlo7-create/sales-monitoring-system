@@ -184,11 +184,13 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
 .top-products { padding: 0; }
 .top-products .panel-header { padding: 19px 19px 0; }
 .top-products .data-table tbody td { white-space: normal; }
-.login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: radial-gradient(ellipse at 20% 20%,#e7eaff 0,transparent 40%),var(--app-background); }
-.login-card { width: min(410px,100%); background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 36px; box-shadow: var(--card-shadow); }
-.login-card h1 { font: 700 24px 'Plus Jakarta Sans',sans-serif; letter-spacing: -.8px; }
-.login-card .form-label { font-size: 11px; color: #667286; }
-.login-card .form-control { min-height: 41px; font-size: 12px; border-color: #e7ebf1; }
+.login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: radial-gradient(ellipse at 18% 18%,rgba(129,140,248,.35),transparent 40%),linear-gradient(135deg,#eef2ff 0%,#dbeafe 52%,#f8fafc 100%); }
+.login-card { width: min(430px,100%); background: #fff; border: 0; border-radius: 24px; padding: 42px; box-shadow: 0 24px 70px rgba(30,41,59,.14); }
+.login-card h1 { font: 700 28px 'Plus Jakarta Sans',sans-serif; letter-spacing: -1px; }
+.login-card .form-label { font-size: 12px; color: #667286; font-weight: 600; }
+.login-card .form-control { min-height: 44px; font-size: 13px; border: 1px solid transparent; border-radius: 10px; background: #f1f5f9; box-shadow: none; padding: 10px 13px; }
+.login-card .form-control:focus { background: #fff; border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+.login-card .btn-primary { min-height: 44px; border-radius: 10px; font-size: 13px; }
 .login-toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 10px 16px; background: #26334b; color: white; border-radius: 7px; font-size: 12px; }
 .page-loading { min-height: 100vh; display: grid; place-items: center; }
 .page-loading.inline { min-height: 260px; }
@@ -244,4 +246,79 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
   .date-controls .form-control { min-width: 0; width: 100%; }
   .date-controls .btn { align-self: end; }
   .login-card { padding: 28px 23px; }
+}
+
+:root[data-bs-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --panel: #1e293b;
+  --app-background: #0f172a;
+  --card-shadow: 0 8px 30px rgba(0,0,0,.2);
+  --bs-body-color: #e2e8f0;
+  --bs-body-bg: #0f172a;
+  --bs-secondary-color: #94a3b8;
+}
+
+:root[data-bs-theme="dark"] body { background: var(--app-background); color: var(--ink); }
+:root[data-bs-theme="dark"] .sidebar,
+:root[data-bs-theme="dark"] .topbar { background: rgba(15,23,42,.88); border-color: #334155; }
+:root[data-bs-theme="dark"] .sidebar-brand strong,
+:root[data-bs-theme="dark"] .profile-meta strong,
+:root[data-bs-theme="dark"] .breadcrumb-label strong,
+:root[data-bs-theme="dark"] .summary-card,
+:root[data-bs-theme="dark"] .panel,
+:root[data-bs-theme="dark"] .panel-header h2,
+:root[data-bs-theme="dark"] .metric-value,
+:root[data-bs-theme="dark"] .stock-product strong,
+:root[data-bs-theme="dark"] .main-secondary strong,
+:root[data-bs-theme="dark"] .filter-label strong,
+:root[data-bs-theme="dark"] .cart-name strong,
+:root[data-bs-theme="dark"] .cart-total strong,
+:root[data-bs-theme="dark"] .transaction-meta strong,
+:root[data-bs-theme="dark"] .transaction-total strong,
+:root[data-bs-theme="dark"] .empty-state strong { color: #e2e8f0; }
+:root[data-bs-theme="dark"] .workspace-label,
+:root[data-bs-theme="dark"] .breadcrumb-label,
+:root[data-bs-theme="dark"] .today-label,
+:root[data-bs-theme="dark"] .summary-top,
+:root[data-bs-theme="dark"] .panel-header p,
+:root[data-bs-theme="dark"] .filter-label small,
+:root[data-bs-theme="dark"] .empty-state,
+:root[data-bs-theme="dark"] .form-field,
+:root[data-bs-theme="dark"] .date-controls label { color: #94a3b8; }
+:root[data-bs-theme="dark"] .sidebar-bottom,
+:root[data-bs-theme="dark"] .stock-row,
+:root[data-bs-theme="dark"] .transaction-row,
+:root[data-bs-theme="dark"] .sale-detail-items,
+:root[data-bs-theme="dark"] .cart-items { border-color: #334155; }
+:root[data-bs-theme="dark"] .nav-link { color: #cbd5e1; }
+:root[data-bs-theme="dark"] .nav-link:hover,
+:root[data-bs-theme="dark"] .icon-button:hover { background: #1e293b; color: #f8fafc; }
+:root[data-bs-theme="dark"] .nav-link.active,
+:root[data-bs-theme="dark"] .nav-link.active:hover { color: #fff; }
+:root[data-bs-theme="dark"] .summary-card,
+:root[data-bs-theme="dark"] .panel { border-color: #29374b; box-shadow: var(--card-shadow); }
+:root[data-bs-theme="dark"] .period-pill,
+:root[data-bs-theme="dark"] .table-search,
+:root[data-bs-theme="dark"] .search-control { background: #0f172a; border-color: #334155; color: #94a3b8; }
+:root[data-bs-theme="dark"] .data-table thead th { background: #172337; border-color: #334155; color: #94a3b8; }
+:root[data-bs-theme="dark"] .data-table tbody td { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-bs-theme="dark"] .form-field .form-control,
+:root[data-bs-theme="dark"] .form-field .form-select,
+:root[data-bs-theme="dark"] .date-controls .form-control,
+:root[data-bs-theme="dark"] .login-card .form-control { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+:root[data-bs-theme="dark"] .login-screen { background: radial-gradient(ellipse at 18% 18%,rgba(79,70,229,.3),transparent 40%),linear-gradient(135deg,#111827 0%,#172554 52%,#0f172a 100%); }
+:root[data-bs-theme="dark"] .login-card { background: #1e293b; color: #e2e8f0; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+:root[data-bs-theme="dark"] .login-card .form-control:focus { background: #0f172a; border-color: #818cf8; }
+:root[data-bs-theme="dark"] .product-glyph,
+:root[data-bs-theme="dark"] .transaction-icon,
+:root[data-bs-theme="dark"] .empty-icon { background: #263449; color: #a5b4fc; }
+:root[data-bs-theme="dark"] .stock-row { border-bottom-color: #334155; }
+:root[data-bs-theme="dark"] .stock-row:last-child { border: 0; }
+:root[data-bs-theme="dark"] .sidebar-backdrop { background: rgba(2,6,23,.72); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }

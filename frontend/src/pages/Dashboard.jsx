@@ -6,7 +6,7 @@ import { api, money } from '../api.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
 
-export function Dashboard({ onNavigate }) {
+export function Dashboard({ onNavigate, darkMode = false }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => { api('/dashboard').then(setData).catch(err => setError(err.message)); }, []);
@@ -26,8 +26,8 @@ export function Dashboard({ onNavigate }) {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => money(context.raw) } } },
     scales: {
-      x: { grid: { display: false }, ticks: { color: '#8791a4' }, border: { display: false } },
-      y: { grid: { display: false }, ticks: { color: '#8791a4', callback: value => `$${value}` }, border: { display: false } }
+      x: { grid: { display: false }, ticks: { color: darkMode ? '#94a3b8' : '#8791a4' }, border: { display: false } },
+      y: { grid: { display: false }, ticks: { color: darkMode ? '#94a3b8' : '#8791a4', callback: value => `$${value}` }, border: { display: false } }
     }
   };
   const cards = [
