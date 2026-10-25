@@ -48,7 +48,9 @@ app.get('/api/health', asyncRoute(async (_req, res) => {
 
 app.post('/api/auth/login', asyncRoute(async (req, res) => {
   const { email, password } = req.body || {};
-  if (!required(email) || !required(password)) return res.status(400).json({ error: 'Email and password are required.' });
+  if (!required(email) || !required(password)) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
 
   const normalizedEmail = String(email).trim().toLowerCase();
   const [employees] = await pool.execute(
@@ -57,20 +59,17 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   );
   const employee = employees[0];
 
-  if (employee) {
-    const isMatch = Number(employee.active) === 1 && employee.password_hash &&
-      await bcrypt.compare(String(password), employee.password_hash);
-    if (isMatch) {
-      const token = jwt.sign(
-        { sub: employee.id, role: employee.role },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-      );
-      return res.json({
-        token,
-        user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
-      });
-    }
+  if (employee && Number(employee.active) === 1 && employee.password_hash &&
+      await bcrypt.compare(String(password), employee.password_hash)) {
+    const token = jwt.sign(
+      { sub: employee.id, role: employee.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    );
+    return res.json({
+      token,
+      user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
+    });
   }
 
   const [customers] = await pool.execute(
