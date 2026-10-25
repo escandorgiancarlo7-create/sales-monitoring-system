@@ -101,7 +101,7 @@ export default function App() {
         {visibleNav.map(item => {
           const Icon = item.icon;
           return <button key={item.id} className={`nav-link ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); setMobileOpen(false); }}>
-            <Icon size={18} strokeWidth={1.8} /><span>{item.label}</span>
+            <span className="nav-icon"><Icon size={18} strokeWidth={1.8} /></span><span>{item.label}</span>
             {item.id === 'inventory' && <span className="nav-dot" />}
           </button>;
         })}

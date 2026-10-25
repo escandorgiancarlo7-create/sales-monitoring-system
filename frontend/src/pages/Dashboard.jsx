@@ -18,8 +18,8 @@ export function Dashboard({ onNavigate }) {
     labels: sales.map(row => new Date(`${row.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' })),
     datasets: [{
       label: 'Sales revenue', data: sales.map(row => Number(row.total)),
-      borderColor: '#4169f5', backgroundColor: 'rgba(65,105,245,.10)',
-      fill: true, tension: .38, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderWidth: 2
+      borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,.08)',
+      fill: true, tension: .38, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#fff', pointBorderColor: '#4f46e5', pointBorderWidth: 2
     }]
   };
   const chartOptions = {
@@ -27,7 +27,7 @@ export function Dashboard({ onNavigate }) {
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => money(context.raw) } } },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#8791a4' }, border: { display: false } },
-      y: { grid: { color: '#edf0f5' }, ticks: { color: '#8791a4', callback: value => `$${value}` }, border: { display: false } }
+      y: { grid: { display: false }, ticks: { color: '#8791a4', callback: value => `$${value}` }, border: { display: false } }
     }
   };
   const cards = [
@@ -45,7 +45,7 @@ export function Dashboard({ onNavigate }) {
       {cards.map(card => {
         const Icon = card.icon;
         return <article className="summary-card" key={card.label}>
-          <div className="summary-top"><span>{card.label}</span><div className={`metric-icon ${card.color}`}><Icon size={19} /></div></div>
+          <div className="summary-top"><span>{card.label}</span><div className={`metric-icon ${card.color}`}><Icon size={20} strokeWidth={1.9} /></div></div>
           <div className="metric-value">{card.value}</div>
           <div className="metric-foot"><span className="text-secondary">{card.note}</span><span className={`metric-change ${card.color === 'orange' ? 'warning' : ''}`}>{card.color === 'orange' ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}{card.change}</span></div>
         </article>;
@@ -71,7 +71,7 @@ export function Dashboard({ onNavigate }) {
       <div className="panel-header"><div><h2>Sales performance</h2><p>Daily revenue comparison</p></div><button className="btn btn-outline-secondary btn-sm" onClick={() => onNavigate('reports')}>View reports <ArrowRight size={14} /></button></div>
       <div className="mini-chart"><Bar data={{
         labels: sales.map(row => new Date(`${row.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' })),
-        datasets: [{ label: 'Revenue', data: sales.map(row => Number(row.total)), backgroundColor: '#dbe4ff', hoverBackgroundColor: '#4169f5', borderRadius: 5, barPercentage: .48 }]
+        datasets: [{ label: 'Revenue', data: sales.map(row => Number(row.total)), backgroundColor: '#c7d2fe', hoverBackgroundColor: '#4f46e5', borderRadius: 6, barPercentage: .48 }]
       }} options={{ ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, beginAtZero: true } } }} /></div>
     </article>
   </>;
