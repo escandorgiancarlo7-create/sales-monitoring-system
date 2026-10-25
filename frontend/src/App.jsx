@@ -1,13 +1,14 @@
-import React from 'react'; // Or import React, { useState, useEffect } from 'react';  import {
-    Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
-    Menu, Moon, Package, ShoppingCart, Sun, Users, X
-  } from 'lucide-react';
-  import { api } from './api.js';
-  import { Dashboard } from './pages/Dashboard.jsx';
-  import { DataPage } from './pages/DataPage.jsx';
-  import { InventoryPage } from './pages/InventoryPage.jsx';
-  import { SalesPage } from './pages/SalesPage.jsx';
-  import { ReportsPage } from './pages/ReportsPage.jsx';
+import React from 'react';
+import {
+  Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
+  Menu, Moon, Package, ShoppingCart, Sun, Users, X
+} from 'lucide-react';
+import { api } from './api.js';
+import { Dashboard } from './pages/Dashboard.jsx';
+import { DataPage } from './pages/DataPage.jsx';
+import { InventoryPage } from './pages/InventoryPage.jsx';
+import { SalesPage } from './pages/SalesPage.jsx';
+import { ReportsPage } from './pages/ReportsPage.jsx';
 import CustomerStorefront from './pages/CustomerStorefront.jsx';
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
