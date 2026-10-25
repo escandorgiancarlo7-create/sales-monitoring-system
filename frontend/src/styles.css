@@ -188,7 +188,9 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
 .top-products { padding: 0; }
 .top-products .panel-header { padding: 19px 19px 0; }
 .top-products .data-table tbody td { white-space: normal; }
-.login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: radial-gradient(ellipse at 18% 18%,rgba(129,140,248,.35),transparent 40%),linear-gradient(135deg,#eef2ff 0%,#dbeafe 52%,#f8fafc 100%); }
+.login-screen { min-height: 100vh; position: relative; display: grid; place-items: center; padding: 20px; background: radial-gradient(ellipse at 18% 18%,rgba(129,140,248,.35),transparent 40%),linear-gradient(135deg,#eef2ff 0%,#dbeafe 52%,#f8fafc 100%); }
+.login-theme-toggle { position: absolute; top: 22px; right: 24px; width: 42px; height: 42px; border: 1px solid rgba(100,116,139,.2); border-radius: 12px; background: rgba(255,255,255,.7); color: #475569; box-shadow: 0 4px 14px rgba(15,23,42,.06); }
+.login-theme-toggle:hover { background: #fff; color: #4338ca; }
 .login-card { width: min(430px,100%); background: #fff; border: 0; border-radius: 24px; padding: 42px; box-shadow: 0 24px 70px rgba(30,41,59,.14); }
 .login-card h1 { font: 700 28px 'Plus Jakarta Sans',sans-serif; letter-spacing: -1px; }
 .login-card .form-label { font-size: 12px; color: #667286; font-weight: 600; }
@@ -314,6 +316,8 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
 :root[data-bs-theme="dark"] .date-controls .form-control,
 :root[data-bs-theme="dark"] .login-card .form-control { background: #0f172a; border-color: #334155; color: #e2e8f0; }
 :root[data-bs-theme="dark"] .login-screen { background: radial-gradient(ellipse at 18% 18%,rgba(79,70,229,.3),transparent 40%),linear-gradient(135deg,#111827 0%,#172554 52%,#0f172a 100%); }
+:root[data-bs-theme="dark"] .login-theme-toggle { background: rgba(30,41,59,.8); border-color: #475569; color: #e2e8f0; }
+:root[data-bs-theme="dark"] .login-theme-toggle:hover { background: #334155; color: #c7d2fe; }
 :root[data-bs-theme="dark"] .login-card { background: #1e293b; color: #e2e8f0; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
 :root[data-bs-theme="dark"] .login-card .form-control:focus { background: #0f172a; border-color: #818cf8; }
 :root[data-bs-theme="dark"] .logout-modal-dialog .modal-content { background: #1e293b; color: #e2e8f0; }

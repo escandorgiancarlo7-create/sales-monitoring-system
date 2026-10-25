@@ -20,7 +20,7 @@ const navItems = [
   { id: 'reports', label: 'Reports', icon: ChartNoAxesCombined, roles: ['admin', 'manager'] }
 ];
 
-function Login({ onLogin }) {
+function Login({ onLogin, theme, onToggleTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,6 +35,15 @@ function Login({ onLogin }) {
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
   return <main className="login-screen">
+    <button
+      className="icon-button login-theme-toggle"
+      type="button"
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      onClick={onToggleTheme}
+    >
+      {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+    </button>
     <section className="login-card">
       <div className="brand-mark"><Activity size={24} /></div>
       <p className="eyebrow mt-4">SALES MONITOR</p>
@@ -101,7 +110,14 @@ export default function App() {
   }
 
   if (checking) return <div className="page-loading"><span className="spinner-border text-primary" /></div>;
-  if (!user) return <><Login onLogin={setUser} />{loadError && <div className="login-toast">{loadError}</div>}</>;
+  if (!user) return <>
+    <Login
+      onLogin={setUser}
+      theme={theme}
+      onToggleTheme={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+    />
+    {loadError && <div className="login-toast">{loadError}</div>}
+  </>;
 
   const visibleNav = navItems.filter(item => !item.roles || item.roles.includes(user.role));
   const heading = visibleNav.find(item => item.id === page)?.label || 'Dashboard';
