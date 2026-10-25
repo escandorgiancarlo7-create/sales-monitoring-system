@@ -15,4 +15,10 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// For strict SSL validation, import readFileSync from 'node:fs' and use:
+// ssl: {
+//   ca: readFileSync(new URL('./ca.pem', import.meta.url)),
+//   rejectUnauthorized: true
+// },
+
 export default pool;

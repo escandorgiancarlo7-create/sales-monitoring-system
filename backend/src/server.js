@@ -21,7 +21,6 @@ const allowedOrigins = [
   'https://sales-monitoring-system-webv4.vercel.app',
   ...(process.env.FRONTEND_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean)
 ];
-
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
