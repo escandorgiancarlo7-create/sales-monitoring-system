@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
   Menu, Moon, Package, ShoppingCart, Sun, Users, X
@@ -22,12 +22,12 @@ const navItems = [
 ];
 
 function Login({ onLogin, theme, onToggleTheme }) {
-  const [registering, setRegistering] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [registering, setRegistering] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
   async function submit(event) {
     event.preventDefault();
     setBusy(true); setError('');
@@ -84,21 +84,21 @@ function Login({ onLogin, theme, onToggleTheme }) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(Boolean(localStorage.getItem('sales-token')));
-  const [page, setPage] = useState('dashboard');
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [loadError, setLoadError] = useState('');
-  const [theme, setTheme] = useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const cancelLogoutRef = useRef(null);
+  const [user, setUser] = React.useState(null);
+  const [checking, setChecking] = React.useState(Boolean(localStorage.getItem('sales-token')));
+  const [page, setPage] = React.useState('dashboard');
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [loadError, setLoadError] = React.useState('');
+  const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const cancelLogoutRef = React.useRef(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
     localStorage.setItem('sales-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!showLogoutModal) return undefined;
 
     const previousOverflow = document.body.style.overflow;
@@ -116,7 +116,7 @@ export default function App() {
     };
   }, [showLogoutModal]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!localStorage.getItem('sales-token')) return;
     api('/auth/me').then(result => setUser(result.user))
       .catch(() => { localStorage.removeItem('sales-token'); setLoadError('Your session ended. Please sign in again.'); })

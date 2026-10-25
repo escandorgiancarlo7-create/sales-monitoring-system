@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import { ArrowRight, Check, LoaderCircle, LogOut, Minus, Plus, ShoppingBag, ShoppingCart, Store, Trash2, X } from 'lucide-react';
 import { api, money } from '../api.js';
 
 export function CustomerStorefront({ user, onLogout } = {}) {
-  const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [ordering, setOrdering] = useState(false);
-  const [orderError, setOrderError] = useState('');
-  const [orderSuccess, setOrderSuccess] = useState('');
+  const [products, setProducts] = React.useState([]);
+  const [cart, setCart] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState('');
+  const [cartOpen, setCartOpen] = React.useState(false);
+  const [ordering, setOrdering] = React.useState(false);
+  const [orderError, setOrderError] = React.useState('');
+  const [orderSuccess, setOrderSuccess] = React.useState('');
 
-  useEffect(() => {
+  React.useEffect(() => {
     let active = true;
     api('/products')
       .then(result => {
@@ -33,7 +33,7 @@ export function CustomerStorefront({ user, onLogout } = {}) {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!cartOpen) return undefined;
     function closeOnEscape(event) {
       if (event.key === 'Escape') setCartOpen(false);
@@ -42,8 +42,8 @@ export function CustomerStorefront({ user, onLogout } = {}) {
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, [cartOpen]);
 
-  const itemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
-  const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart]);
+  const itemCount = React.useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const total = React.useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart]);
   const customerName = user?.name || 'Customer';
 
   function addToCart(product) {
