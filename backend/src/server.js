@@ -51,27 +51,46 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   if (!required(email) || !required(password)) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
+  
+  const lowerEmail = String(email).trim().toLowerCase();
+  const cleanPassword = String(password).trim(); // Remove accidental spaces
+  
+  // 1. Check employees
+  let [rows] = await pool.execute('SELECT * FROM employees WHERE email = ?', [lowerEmail]);
+  let user = rows[0];
+  let isCustomer = false;
 
-  const normalizedEmail = String(email).trim().toLowerCase();
-  const [employees] = await pool.execute(
-    'SELECT id, name, email, role, password_hash, active FROM employees WHERE email = ?',
-    [normalizedEmail]
-  );
-  const employee = employees[0];
-
-  if (employee && Number(employee.active) === 1 && employee.password_hash &&
-      await bcrypt.compare(String(password), employee.password_hash)) {
-    const token = jwt.sign(
-      { sub: employee.id, role: employee.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-    );
-    return res.json({
-      token,
-      user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
-    });
+  // 2. Check customers
+  if (!user) {
+    [rows] = await pool.execute('SELECT * FROM customers WHERE email = ?', [lowerEmail]);
+    user = rows[0];
+    isCustomer = true;
   }
 
+  // 3. Validate User
+  if (!user || user.active !== 1) {
+    console.log(`LOGIN FAILED: User not found or inactive -> ${lowerEmail}`);
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  // 4. Compare Password
+  console.log(`LOGIN ATTEMPT: ${lowerEmail} | Typed: "${cleanPassword}" | Hash: ${user.password_hash}`);
+  const isMatch = await bcrypt.compare(cleanPassword, user.password_hash);
+  
+  if (!isMatch) {
+    console.log(`LOGIN FAILED: Password mismatch for ${lowerEmail}`);
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  // 5. Success
+  const userRole = isCustomer ? 'customer' : user.role;
+  const token = jwt.sign({ sub: user.id, role: userRole }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
+  
+  res.json({ 
+    token, 
+    user: { id: user.id, name: user.name, email: user.email, role: userRole } 
+  });
+}));
   const [customers] = await pool.execute(
     'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id DESC',
     [normalizedEmail]
