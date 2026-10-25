@@ -1,3 +1,4 @@
+import CustomerStorefront from './pages/CustomerStorefront.jsx';
 import React from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
@@ -9,7 +10,6 @@ import { DataPage } from './pages/DataPage.jsx';
 import { InventoryPage } from './pages/InventoryPage.jsx';
 import { SalesPage } from './pages/SalesPage.jsx';
 import { ReportsPage } from './pages/ReportsPage.jsx';
-import CustomerStorefront from './pages/CustomerStorefront.jsx';
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'sales', label: 'Sales transactions', icon: ShoppingCart },
