@@ -65,6 +65,12 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   }
 
   const isMatch = await bcrypt.compare(String(password), employee.password_hash);
+  console.log('--- PASSWORD CHECK ---', {
+    passwordProvided: typeof password === 'string' && password.length > 0,
+    hashPresent: Boolean(employee.password_hash),
+    isMatch,
+    isActive: employee.active
+  });
 
   if (!isMatch) {
     return res.status(401).json({ error: 'Invalid email or password.' });
