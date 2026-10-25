@@ -80,8 +80,23 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   );
   let customer = null;
   for (const candidate of customers) {
-    if (Number(candidate.active) === 1 && candidate.password_hash &&
-        await bcrypt.compare(submittedPassword, candidate.password_hash)) {
+    const activeCheck = Number(candidate.active) === 1;
+    const hashCheck = !!candidate.password_hash;
+    let passwordMatch = false;
+
+    if (activeCheck && hashCheck) {
+      passwordMatch = await bcrypt.compare(submittedPassword, candidate.password_hash);
+    }
+
+    console.log('CANDIDATE CHECK:', {
+      id: candidate.id,
+      active: candidate.active,
+      activeCheck,
+      hashCheck,
+      passwordMatch
+    });
+
+    if (activeCheck && hashCheck && passwordMatch) {
       customer = candidate;
       break;
     }
