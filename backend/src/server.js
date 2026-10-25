@@ -56,36 +56,38 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
     [normalizedEmail]
   );
   const employee = employees[0];
-  let customer = null;
 
   if (employee) {
     const isMatch = Number(employee.active) === 1 && employee.password_hash &&
       await bcrypt.compare(String(password), employee.password_hash);
-    if (!isMatch) {
-      console.log('Login failed for:', email, 'Employee found:', !!employee, 'Customer found:', !!customer);
-      return res.status(401).json({ error: 'Invalid email or password.' });
+    if (isMatch) {
+      const token = jwt.sign(
+        { sub: employee.id, role: employee.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      );
+      return res.json({
+        token,
+        user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
+      });
     }
-
-    const token = jwt.sign(
-      { sub: employee.id, role: employee.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-    );
-    return res.json({
-      token,
-      user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
-    });
   }
 
   const [customers] = await pool.execute(
-    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id DESC LIMIT 1',
+    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id DESC',
     [normalizedEmail]
   );
-  customer = customers[0];
-  const isCustomerMatch = customer && Number(customer.active) === 1 && customer.password_hash &&
-    await bcrypt.compare(String(password), customer.password_hash);
-  if (!isCustomerMatch) {
-    console.log('Login failed for:', email, 'Employee found:', !!employee, 'Customer found:', !!customer);
+  let customer = null;
+  for (const candidate of customers) {
+    if (Number(candidate.active) === 1 && candidate.password_hash &&
+        await bcrypt.compare(String(password), candidate.password_hash)) {
+      customer = candidate;
+      break;
+    }
+  }
+
+  if (!customer) {
+    console.log('Login failed for:', email, 'Employee found:', !!employee, 'Customer found:', customers.length > 0);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
