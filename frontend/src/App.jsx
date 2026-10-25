@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
   Menu, Moon, Package, ShoppingCart, Sun, Users, X
