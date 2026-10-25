@@ -54,18 +54,17 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   );
   
   const employee = rows[0];
+  console.log('--- LOGIN DEBUG ---', {
+    email,
+    employeeFound: !!employee,
+    dbHashPresent: Boolean(employee?.password_hash)
+  });
   
   if (!employee || !employee.active) {
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
-  // Debugging Logs to help us see what's happening
   const isMatch = await bcrypt.compare(String(password), employee.password_hash);
-  console.log('--- LOGIN ATTEMPT ---');
-  console.log('Email:', email);
-  console.log('Password Typed:', password);
-  console.log('Stored Hash:', employee.password_hash);
-  console.log('Does it match?:', isMatch);
 
   if (!isMatch) {
     return res.status(401).json({ error: 'Invalid email or password.' });
