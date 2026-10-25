@@ -1,211 +1,289 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, LogOut, Plus, Minus, Trash2, ShoppingBag, Package } from 'lucide-react';
+import { Check, LogOut, Minus, Package, Plus, ShoppingBag, ShoppingCart, Trash2, X } from 'lucide-react';
 import { api, money } from '../api.js';
 
 export default function CustomerStorefront({ user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    let active = true;
     api('/products')
-      .then(data => setProducts(data))
-      .catch(err => console.error("Failed to load products:", err))
-      .finally(() => setLoading(false));
+      .then(data => {
+        if (active) setProducts(Array.isArray(data) ? data : []);
+      })
+      .catch(error => {
+        if (active) setLoadError(error.message || 'Could not load products. Please try again.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, []);
 
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find(item => item.id === product.id);
+  useEffect(() => {
+    if (!message) return undefined;
+    const timeout = window.setTimeout(() => setMessage(''), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [message]);
+
+  useEffect(() => {
+    if (!isCartOpen) return undefined;
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setIsCartOpen(false);
+    }
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [isCartOpen]);
+
+  function addToCart(product) {
+    const stock = Number(product.stock_quantity) || 0;
+    const inCart = cart.find(item => String(item.id) === String(product.id));
+    if (stock <= (inCart?.quantity || 0)) return;
+
+    setCart(current => {
+      const existing = current.find(item => String(item.id) === String(product.id));
       if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return current.map(item => String(item.id) === String(product.id)
+          ? { ...item, quantity: item.quantity + 1 }
+          : item);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...current, { ...product, quantity: 1 }];
     });
-    setMessage(`${product.name} added to cart!`);
-    setTimeout(() => setMessage(''), 2000);
-  };
+    setMessage('Item added!');
+  }
 
-  const updateQuantity = (id, change) => {
-    setCart((prev) => prev.map(item => {
-      if (item.id === id) {
-        const newQty = item.quantity + change;
-        return newQty > 0 ? { ...item, quantity: newQty } : item;
-      }
-      return item;
-    }));
-  };
+  function updateQuantity(id, change) {
+    setCart(current => current
+      .map(item => String(item.id) === String(id)
+        ? { ...item, quantity: item.quantity + change }
+        : item)
+      .filter(item => item.quantity > 0));
+  }
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter(item => item.id !== id));
-  };
+  function removeFromCart(id) {
+    setCart(current => current.filter(item => String(item.id) !== String(id)));
+  }
 
-  const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = cart.reduce((total, item) => total + Number(item.price) * item.quantity, 0);
+  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  const handleCheckout = async () => {
-    if (cart.length === 0) return;
+  async function handleCheckout() {
+    if (!cart.length || checkingOut) return;
     setCheckingOut(true);
     try {
-      const items = cart.map(item => ({ product_id: item.id, quantity: item.quantity }));
       await api('/customer/checkout', {
         method: 'POST',
-        body: JSON.stringify({ items })
+        body: JSON.stringify({
+          items: cart.map(item => ({ product_id: item.id, quantity: item.quantity }))
+        })
       });
-      alert('Order placed successfully! Thank you for shopping.');
       setCart([]);
       setIsCartOpen(false);
+      window.alert('Order placed successfully!');
     } catch (error) {
-      alert(`Checkout failed: ${error.message}`);
+      window.alert(`Checkout failed: ${error.message || 'Please try again.'}`);
     } finally {
       setCheckingOut(false);
     }
-  };
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Toast Message */}
-      {message && (
-        <div className="position-fixed top-0 start-50 translate-middle-x mt-3 px-4 py-2 bg-success text-white rounded-pill shadow-lg" style={{ zIndex: 1050 }}>
-          {message}
-        </div>
-      )}
+    <div className="customer-storefront">
+      <style>{`
+        .customer-storefront { min-height: 100vh; background: #f8fafc; }
+        .customer-storefront-header { position: sticky; top: 0; z-index: 1020; background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
+        .customer-storefront-mark { width: 42px; height: 42px; display: grid; place-items: center; flex: none; border-radius: 13px; color: white; background: linear-gradient(135deg,#6366f1,#4338ca); }
+        .customer-storefront-card { transition: transform .2s ease, box-shadow .2s ease; }
+        .customer-storefront-card:hover { transform: translateY(-5px); box-shadow: 0 1rem 2rem rgba(15,23,42,.12) !important; }
+        .customer-storefront-image { min-height: 180px; display: grid; place-items: center; color: #4f46e5; background: linear-gradient(135deg,#eef2ff,#dbeafe); }
+        .customer-storefront-backdrop { position: fixed; inset: 0; z-index: 1040; border: 0; background: rgba(15,23,42,.5); }
+        .customer-storefront-offcanvas { z-index: 1045; width: min(100%, 420px) !important; transition: transform .3s ease-in-out, visibility .3s ease-in-out; }
+        @media (max-width: 575.98px) {
+          .customer-storefront-header-content { flex-wrap: wrap; }
+          .customer-storefront-greeting { order: 3; flex-basis: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .customer-storefront-card, .customer-storefront-offcanvas { transition: none; }
+        }
+      `}</style>
 
-      {/* Modern Header */}
-      <header className="bg-white border-bottom sticky-top px-4 py-3 shadow-sm d-flex justify-content-between align-items-center">
-        <div className="d-flex align-items-center gap-3">
-          <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-            <ShoppingBag size={20} />
+      <header className="customer-storefront-header border-bottom shadow-sm">
+        <div className="container-fluid px-3 px-lg-5 py-3">
+          <div className="customer-storefront-header-content d-flex align-items-center justify-content-between gap-3">
+            <a href="#" className="d-flex align-items-center gap-2 text-decoration-none text-dark">
+              <span className="customer-storefront-mark"><ShoppingBag size={21} /></span>
+              <span className="fw-bold fs-5">Sales Monitor Store</span>
+            </a>
+            <div className="customer-storefront-greeting d-flex align-items-center gap-3">
+              <span className="text-secondary">Welcome, <strong className="text-dark">{user.name}</strong></span>
+              <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" onClick={onLogout}>
+                <LogOut size={16} /> Logout
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary position-relative rounded-circle d-grid align-items-center justify-content-center"
+                style={{ width: 42, height: 42 }}
+                aria-label={`Open cart, ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'items'}`}
+                aria-expanded={isCartOpen}
+                onClick={() => setIsCartOpen(true)}
+              >
+                <ShoppingCart size={19} />
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {cartItemCount}
+                </span>
+              </button>
+            </div>
           </div>
-          <h4 className="m-0 fw-bold text-dark">Sales Monitor Store</h4>
-        </div>
-        
-        <div className="d-flex align-items-center gap-4">
-          <span className="text-secondary d-none d-md-block">Welcome, <strong>{user.name}</strong></span>
-          
-          <button 
-            className="btn btn-light position-relative border shadow-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingCart size={18} />
-            <span className="fw-semibold">Cart</span>
-            {cartItemCount > 0 && (
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                {cartItemCount}
-              </span>
-            )}
-          </button>
-
-          <button className="btn btn-outline-danger d-flex align-items-center gap-2 rounded-pill px-3" onClick={onLogout}>
-            <LogOut size={16} /> Logout
-          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container py-5">
-        <div className="d-flex justify-content-between align-items-end mb-4">
-          <div>
-            <h2 className="fw-bold mb-1">Discover Products</h2>
-            <p className="text-secondary m-0">Explore our latest Chu Chu Beauty collection.</p>
+      {message && (
+        <div className="toast show position-fixed top-0 start-50 translate-middle-x mt-3" role="status" aria-live="polite" style={{ zIndex: 1060 }}>
+          <div className="toast-header">
+            <span className="rounded-circle bg-success me-2" style={{ width: 10, height: 10 }} />
+            <strong className="me-auto">Sales Monitor Store</strong>
+            <button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setMessage('')} />
           </div>
+          <div className="toast-body d-flex align-items-center gap-2"><Check size={17} className="text-success" />Item added!</div>
+        </div>
+      )}
+
+      <main className="container py-4 py-lg-5">
+        <section className="rounded-4 p-4 p-lg-5 mb-4 mb-lg-5 text-white shadow-sm" style={{ background: 'linear-gradient(120deg,#4338ca,#6366f1 60%,#818cf8)' }}>
+          <p className="text-uppercase small fw-semibold opacity-75 mb-2">Welcome to our store</p>
+          <h1 className="display-6 fw-bold mb-2">Find something you’ll love.</h1>
+          <p className="mb-0 opacity-75">Browse our products and add your favorites to the cart.</p>
+        </section>
+
+        {loadError && <div className="alert alert-danger" role="alert">{loadError}</div>}
+
+        <div className="d-flex align-items-end justify-content-between mb-3 mb-lg-4">
+          <div>
+            <p className="text-primary text-uppercase small fw-bold mb-1">Our collection</p>
+            <h2 className="h3 fw-bold mb-0">Discover products</h2>
+          </div>
+          {!loading && <span className="small text-secondary">{products.length} {products.length === 1 ? 'product' : 'products'}</span>}
         </div>
 
         {loading ? (
-          <div className="d-flex justify-content-center py-5">
-            <div className="spinner-border text-primary" role="status"></div>
+          <div className="text-center py-5" role="status">
+            <span className="spinner-border text-primary" aria-hidden="true" />
+            <p className="text-secondary mt-3 mb-0">Loading products...</p>
           </div>
-        ) : (
-          <div className="row g-4">
-            {products.map(p => (
-              <div className="col-12 col-md-6 col-lg-4" key={p.id}>
-                <div className="card h-100 border-0 shadow-sm rounded-4 product-card">
-                  <div className="card-body p-4 d-flex flex-column">
-                    <div className="bg-light rounded-3 d-flex align-items-center justify-content-center mb-3" style={{ height: '180px' }}>
-                      <Package size={64} className="text-secondary opacity-50" />
+        ) : products.length > 0 ? (
+          <div className="row g-3 g-lg-4">
+            {products.map(product => {
+              const inCart = cart.find(item => String(item.id) === String(product.id));
+              const available = Number(product.stock_quantity) > (inCart?.quantity || 0);
+              return (
+                <div className="col-12 col-sm-6 col-lg-4 col-xl-3" key={product.id}>
+                  <article className="card customer-storefront-card rounded-4 shadow-sm border-0 h-100 overflow-hidden">
+                    <div className="customer-storefront-image">
+                      <Package size={64} strokeWidth={1.4} aria-hidden="true" />
                     </div>
-                    <h5 className="fw-bold mb-1">{p.name}</h5>
-                    <p className="text-secondary small mb-3 flex-grow-1">{p.description || 'No description available.'}</p>
-                    <div className="d-flex justify-content-between align-items-center mt-auto">
-                      <h4 className="text-primary fw-bold m-0">{money(p.price)}</h4>
-                      <button 
-                        className="btn btn-primary px-4 rounded-pill shadow-sm"
-                        onClick={() => addToCart(p)}
-                      >
-                        Add to Cart
+                    <div className="card-body p-3 p-lg-4 d-flex flex-column">
+                      <h3 className="h5 fw-bold mb-2">{product.name}</h3>
+                      <p className="small text-secondary mb-3 flex-grow-1">{product.description || 'A great addition to your everyday essentials.'}</p>
+                      <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <span className="fs-4 fw-bold text-primary">{money(product.price)}</span>
+                        <span className={`small ${available ? 'text-secondary' : 'text-danger'}`}>
+                          {available ? `${Number(product.stock_quantity) - (inCart?.quantity || 0)} in stock` : 'Out of stock'}
+                        </span>
+                      </div>
+                      <button type="button" className="btn btn-primary w-100" disabled={!available} onClick={() => addToCart(product)}>
+                        <ShoppingCart size={17} className="me-2" />Add to Cart
                       </button>
                     </div>
-                  </div>
+                  </article>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        )}
+        ) : !loadError ? (
+          <div className="text-center rounded-4 bg-white p-5 shadow-sm">
+            <Package size={36} className="text-secondary mb-3" />
+            <h3 className="h5 fw-bold">No products available</h3>
+            <p className="text-secondary mb-0">Please check back soon.</p>
+          </div>
+        ) : null}
       </main>
 
-      {/* Cart Sidebar (Offcanvas) */}
-      <div className={`offcanvas offcanvas-end ${isCartOpen ? 'show' : ''}`} tabIndex="-1" style={{ visibility: isCartOpen ? 'visible' : 'hidden', width: '400px' }}>
-        <div className="offcanvas-header bg-light border-bottom">
-          <h5 className="offcanvas-title fw-bold d-flex align-items-center gap-2">
-            <ShoppingCart size={20} /> Your Cart ({cartItemCount})
-          </h5>
-          <button type="button" className="btn-close" onClick={() => setIsCartOpen(false)}></button>
+      {isCartOpen && (
+        <button type="button" className="customer-storefront-backdrop" aria-label="Close cart" onClick={() => setIsCartOpen(false)} />
+      )}
+      <aside
+        className={`offcanvas offcanvas-end customer-storefront-offcanvas ${isCartOpen ? 'show' : ''}`}
+        tabIndex="-1"
+        role="dialog"
+        aria-modal={isCartOpen}
+        aria-hidden={!isCartOpen}
+        aria-labelledby="customer-cart-title"
+        style={{ visibility: isCartOpen ? 'visible' : 'hidden' }}
+      >
+        <div className="offcanvas-header border-bottom px-4 py-3">
+          <div>
+            <h2 className="offcanvas-title h5 fw-bold mb-1" id="customer-cart-title">Your cart</h2>
+            <p className="small text-secondary mb-0">{cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}</p>
+          </div>
+          <button type="button" className="btn-close" aria-label="Close cart" onClick={() => setIsCartOpen(false)} />
         </div>
-        <div className="offcanvas-body p-0 d-flex flex-column">
-          <div className="flex-grow-1 overflow-auto p-4">
-            {cart.length === 0 ? (
-              <div className="text-center text-secondary mt-5">
-                <ShoppingCart size={48} className="mb-3 opacity-50" />
-                <p>Your cart is empty.</p>
-              </div>
-            ) : (
-              <div className="d-flex flex-column gap-3">
+        <div className="offcanvas-body d-flex flex-column p-4">
+          {!cart.length ? (
+            <div className="text-center my-auto">
+              <ShoppingBag size={42} className="text-secondary mb-3" />
+              <h3 className="h6 fw-bold">Your cart is empty</h3>
+              <p className="small text-secondary">Add products to get started.</p>
+              <button type="button" className="btn btn-primary" onClick={() => setIsCartOpen(false)}>Continue shopping</button>
+            </div>
+          ) : (
+            <>
+              <div className="flex-grow-1 overflow-auto">
                 {cart.map(item => (
-                  <div key={item.id} className="d-flex align-items-center gap-3 border-bottom pb-3">
-                    <div className="bg-light rounded p-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                      <Package size={24} className="text-secondary" />
+                  <div className="d-flex align-items-center gap-3 py-3 border-bottom" key={item.id}>
+                    <div className="rounded-3 d-grid align-items-center justify-content-center flex-shrink-0" style={{ width: 48, height: 48, background: '#eef2ff', color: '#4338ca' }}>
+                      <Package size={22} />
                     </div>
-                    <div className="flex-grow-1">
-                      <h6 className="mb-1 fw-bold">{item.name}</h6>
-                      <div className="text-primary fw-semibold">{money(item.price)}</div>
-                    </div>
-                    <div className="d-flex flex-column align-items-end gap-2">
-                      <div className="input-group input-group-sm" style={{ width: '100px' }}>
-                        <button className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, -1)}><Minus size={12}/></button>
-                        <input type="text" className="form-control text-center" value={item.quantity} readOnly />
-                        <button className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, 1)}><Plus size={12}/></button>
+                    <div className="flex-grow-1 min-w-0">
+                      <p className="fw-semibold mb-1 text-truncate">{item.name}</p>
+                      <p className="small text-primary fw-semibold mb-2">{money(item.price)}</p>
+                      <div className="d-flex align-items-center gap-2">
+                        <button type="button" className="btn btn-sm btn-outline-secondary py-1 px-2" aria-label={`Decrease ${item.name} quantity`} onClick={() => updateQuantity(item.id, -1)}>
+                          <Minus size={13} />
+                        </button>
+                        <span className="small fw-semibold" aria-label={`Quantity ${item.quantity}`}>{item.quantity}</span>
+                        <button type="button" className="btn btn-sm btn-outline-secondary py-1 px-2" aria-label={`Increase ${item.name} quantity`} disabled={item.quantity >= Number(item.stock_quantity)} onClick={() => updateQuantity(item.id, 1)}>
+                          <Plus size={13} />
+                        </button>
                       </div>
-                      <button className="btn btn-link text-danger p-0 text-decoration-none" onClick={() => removeFromCart(item.id)}>
-                        <Trash2 size={14} /> Remove
+                    </div>
+                    <div className="text-end">
+                      <strong className="small d-block mb-2">{money(Number(item.price) * item.quantity)}</strong>
+                      <button type="button" className="btn btn-sm btn-link text-danger p-0" aria-label={`Remove ${item.name}`} onClick={() => removeFromCart(item.id)}>
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-          
-          {cart.length > 0 && (
-            <div className="border-top p-4 bg-light">
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-secondary">Total</span>
-                <h4 className="fw-bold text-primary mb-0">{money(cartTotal)}</h4>
+              <div className="border-top pt-3 mt-3">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <span className="text-secondary">Total</span>
+                  <strong className="fs-5">{money(cartTotal)}</strong>
+                </div>
+                <button type="button" className="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2" disabled={checkingOut} onClick={handleCheckout}>
+                  {checkingOut ? <><span className="spinner-border spinner-border-sm" aria-hidden="true" />Processing...</> : <><ShoppingBag size={18} />Checkout Now</>}
+                </button>
               </div>
-              <button 
-                className="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                onClick={handleCheckout}
-                disabled={checkingOut}
-              >
-                {checkingOut ? 'Processing...' : 'Checkout Now'}
-              </button>
-            </div>
+            </>
           )}
         </div>
-      </div>
-      {isCartOpen && <div className="offcanvas-backdrop fade show" onClick={() => setIsCartOpen(false)}></div>}
+      </aside>
     </div>
   );
 }
