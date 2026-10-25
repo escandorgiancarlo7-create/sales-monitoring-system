@@ -1,5 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL
-  || `${window.location.protocol}//${window.location.hostname}:4000/api`;
+  || (import.meta.env.DEV
+    ? `${window.location.protocol}//${window.location.hostname}:4000/api`
+    : '/api');
 
 export async function api(path, options = {}) {
   const token = localStorage.getItem('sales-token');
