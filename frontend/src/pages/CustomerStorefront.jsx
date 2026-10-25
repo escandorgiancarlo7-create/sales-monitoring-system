@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, LoaderCircle, LogOut, Minus, Plus, ShoppingBag, ShoppingCart, Store, Trash2, X } from 'lucide-react';
 import { api, money } from '../api.js';
 
-export function CustomerStorefront({ user, onLogout }) {
+export function CustomerStorefront({ user, onLogout } = {}) {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,13 @@ export function CustomerStorefront({ user, onLogout }) {
     let active = true;
     api('/products')
       .then(result => {
-        if (active) setProducts(result);
+        if (!active) return;
+        if (!Array.isArray(result)) {
+          setLoadError('The product catalog returned an unexpected response.');
+          setProducts([]);
+          return;
+        }
+        setProducts(result.filter(product => product && typeof product === 'object'));
       })
       .catch(error => {
         if (active) setLoadError(error.message);
@@ -38,6 +44,7 @@ export function CustomerStorefront({ user, onLogout }) {
 
   const itemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
   const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart]);
+  const customerName = user?.name || 'Customer';
 
   function addToCart(product) {
     setOrderError('');
@@ -90,13 +97,13 @@ export function CustomerStorefront({ user, onLogout }) {
         <span>Sales Monitor<span className="storefront-brand-subtitle">THE CUSTOMER STORE</span></span>
       </a>
       <div className="storefront-header-actions">
-        <span className="storefront-greeting">Hello, {user.name}</span>
+        <span className="storefront-greeting">Hello, {customerName}</span>
         <button className="storefront-cart-button" type="button" onClick={() => setCartOpen(true)} aria-label={`Open cart, ${itemCount} items`}>
           <ShoppingCart size={19} />
           <span>Cart</span>
           <span className="storefront-cart-badge">{itemCount}</span>
         </button>
-        <button className="storefront-logout" type="button" onClick={onLogout}>
+        <button className="storefront-logout" type="button" onClick={() => onLogout?.()}>
           <LogOut size={17} /><span>Logout</span>
         </button>
       </div>
