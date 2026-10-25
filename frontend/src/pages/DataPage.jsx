@@ -23,7 +23,8 @@ const definitions = {
     title: 'Customers', description: 'Keep customer contact details organized.', endpoint: '/customers',
     fields: [
       { key: 'name', label: 'Full name', required: true }, { key: 'email', label: 'Email', type: 'email' },
-      { key: 'phone', label: 'Phone' }, { key: 'address', label: 'Address' }
+      { key: 'phone', label: 'Phone' }, { key: 'address', label: 'Address' },
+      { key: 'password', label: 'Portal password (8+ characters; leave blank to keep unchanged)', type: 'password' }
     ],
     columns: [{ key: 'name', label: 'Customer' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'address', label: 'Address' }, { key: 'created_at', label: 'Added', render: dateTime }]
   },

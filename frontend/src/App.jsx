@@ -21,6 +21,8 @@ const navItems = [
 ];
 
 function Login({ onLogin, theme, onToggleTheme }) {
+  const [registering, setRegistering] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +31,10 @@ function Login({ onLogin, theme, onToggleTheme }) {
     event.preventDefault();
     setBusy(true); setError('');
     try {
-      const result = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      const result = await api(registering ? '/auth/customer/register' : '/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(registering ? { name, email, password } : { email, password })
+      });
       localStorage.setItem('sales-token', result.token);
       onLogin(result.user);
     } catch (err) { setError(err.message); } finally { setBusy(false); }
@@ -47,16 +52,31 @@ function Login({ onLogin, theme, onToggleTheme }) {
     <section className="login-card">
       <div className="brand-mark"><Activity size={24} /></div>
       <p className="eyebrow mt-4">SALES MONITOR</p>
-      <h1>Welcome back</h1>
-      <p className="text-secondary mb-4">Sign in to manage your business.</p>
+      <h1>{registering ? 'Create your account' : 'Welcome back'}</h1>
+      <p className="text-secondary mb-4">
+        {registering ? 'Create a customer account to shop and track your orders.' : 'Sign in to manage your business.'}
+      </p>
       {error && <div className="alert alert-danger py-2">{error}</div>}
       <form onSubmit={submit}>
+        {registering && <>
+          <label className="form-label">Full name</label>
+          <input className="form-control mb-3" type="text" autoComplete="name" required value={name} onChange={e => setName(e.target.value)} />
+        </>}
         <label className="form-label">Work email</label>
         <input className="form-control mb-3" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} />
         <label className="form-label">Password</label>
-        <input className="form-control mb-4" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
-        <button className="btn btn-primary w-100 py-2" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+        <input className="form-control mb-4" type="password" minLength={registering ? 8 : undefined} autoComplete={registering ? 'new-password' : 'current-password'} required value={password} onChange={e => setPassword(e.target.value)} />
+        <button className="btn btn-primary w-100 py-2" disabled={busy}>
+          {busy ? 'Please wait…' : registering ? 'Create customer account' : 'Sign in'}
+        </button>
       </form>
+      <button
+        className="text-link login-mode-toggle mx-auto"
+        type="button"
+        onClick={() => { setRegistering(!registering); setError(''); }}
+      >
+        {registering ? 'Already have an account? Sign in' : 'New customer? Create an account'}
+      </button>
       <small className="text-secondary d-block text-center mt-4">Ask your administrator for an account.</small>
     </section>
   </main>;

@@ -73,12 +73,11 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   }
 
   const [customers] = await pool.execute(
-    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id LIMIT 1',
+    'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? AND active = 1 AND password_hash IS NOT NULL ORDER BY id DESC LIMIT 1',
     [normalizedEmail]
   );
   const customer = customers[0];
-  const isCustomerMatch = customer?.active && customer.password_hash &&
-    await bcrypt.compare(String(password), customer.password_hash);
+  const isCustomerMatch = customer && await bcrypt.compare(String(password), customer.password_hash);
   if (!isCustomerMatch) return res.status(401).json({ error: 'Invalid email or password.' });
 
   const token = jwt.sign(
@@ -89,6 +88,46 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   res.json({
     token,
     user: { id: customer.id, name: customer.name, email: customer.email, role: 'customer' }
+  });
+}));
+
+app.post('/api/auth/customer/register', asyncRoute(async (req, res) => {
+  const { name, email, password } = req.body || {};
+  if (!required(name) || !required(email) || !required(password) || String(password).length < 8) {
+    return res.status(400).json({ error: 'Name, email, and a password of at least 8 characters are required.' });
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const [employees] = await pool.execute(
+    'SELECT id FROM employees WHERE email = ? LIMIT 1',
+    [normalizedEmail]
+  );
+  if (employees.length) {
+    return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
+  }
+
+  const [customers] = await pool.execute(
+    'SELECT id FROM customers WHERE email = ? LIMIT 1',
+    [normalizedEmail]
+  );
+  if (customers.length) {
+    return res.status(409).json({ error: 'A customer profile with this email already exists. Contact the store to activate portal access.' });
+  }
+
+  const passwordHash = await bcrypt.hash(String(password), 12);
+  const [result] = await pool.execute(
+    'INSERT INTO customers (name, email, password_hash) VALUES (?, ?, ?)',
+    [String(name).trim(), normalizedEmail, passwordHash]
+  );
+  const token = jwt.sign(
+    { sub: result.insertId, role: 'customer' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+  );
+
+  res.status(201).json({
+    token,
+    user: { id: result.insertId, name: String(name).trim(), email: normalizedEmail, role: 'customer' }
   });
 }));
 
@@ -345,21 +384,29 @@ app.get('/api/customers', employeeOnly, asyncRoute(async (_req, res) => {
 }));
 
 app.post('/api/customers', employeeOnly, asyncRoute(async (req, res) => {
-  const { name, email = '', phone = '', address = '' } = req.body || {};
+  const { name, email = '', phone = '', address = '', password = '' } = req.body || {};
   if (!required(name)) return res.status(400).json({ error: 'Customer name is required.' });
+  if (password && String(password).length < 8) {
+    return res.status(400).json({ error: 'Customer portal passwords must be at least 8 characters.' });
+  }
+  const passwordHash = password ? await bcrypt.hash(String(password), 12) : null;
   const [result] = await pool.execute(
-    'INSERT INTO customers (name, email, phone, address) VALUES (?, ?, ?, ?)',
-    [String(name).trim(), String(email).trim(), String(phone).trim(), String(address).trim()]
+    'INSERT INTO customers (name, email, phone, address, password_hash) VALUES (?, ?, ?, ?, ?)',
+    [String(name).trim(), String(email).trim().toLowerCase(), String(phone).trim(), String(address).trim(), passwordHash]
   );
   res.status(201).json({ id: result.insertId });
 }));
 
 app.put('/api/customers/:id', employeeOnly, asyncRoute(async (req, res) => {
-  const { name, email = '', phone = '', address = '' } = req.body || {};
+  const { name, email = '', phone = '', address = '', password = '' } = req.body || {};
   if (!required(name)) return res.status(400).json({ error: 'Customer name is required.' });
+  if (password && String(password).length < 8) {
+    return res.status(400).json({ error: 'Customer portal passwords must be at least 8 characters.' });
+  }
+  const passwordHash = password ? await bcrypt.hash(String(password), 12) : null;
   const [result] = await pool.execute(
-    'UPDATE customers SET name = ?, email = ?, phone = ?, address = ? WHERE id = ? AND active = 1',
-    [String(name).trim(), String(email).trim(), String(phone).trim(), String(address).trim(), req.params.id]
+    'UPDATE customers SET name = ?, email = ?, phone = ?, address = ?, password_hash = COALESCE(?, password_hash) WHERE id = ? AND active = 1',
+    [String(name).trim(), String(email).trim().toLowerCase(), String(phone).trim(), String(address).trim(), passwordHash, req.params.id]
   );
   if (!result.affectedRows) return res.status(404).json({ error: 'Customer not found.' });
   res.json({ success: true });
