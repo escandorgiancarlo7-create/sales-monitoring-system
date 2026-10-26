@@ -61,61 +61,42 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
     [normalizedEmail]
   );
   const employee = employees[0];
-  if (employee && Number(employee.active) === 1 && employee.password_hash &&
-      await bcrypt.compare(submittedPassword, employee.password_hash)) {
-    const token = jwt.sign(
-      { sub: employee.id, role: employee.role },
-      process.env.JWT_SECRET,
-      { expiresIn }
-    );
-    return res.json({
-      token,
-      user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
-    });
+  if (employee && Number(employee.active) === 1 && employee.password_hash) {
+    const passwordMatches = await bcrypt.compare(submittedPassword, employee.password_hash);
+    if (passwordMatches) {
+      const token = jwt.sign(
+        { sub: employee.id, role: employee.role },
+        process.env.JWT_SECRET,
+        { expiresIn }
+      );
+      return res.json({
+        token,
+        user: { id: employee.id, name: employee.name, email: employee.email, role: employee.role }
+      });
+    }
   }
 
   const [customers] = await pool.execute(
     'SELECT id, name, email, password_hash, active FROM customers WHERE email = ? ORDER BY id DESC',
     [normalizedEmail]
   );
-  let customer = null;
   for (const candidate of customers) {
-    const activeCheck = Number(candidate.active) === 1;
-    const hashCheck = !!candidate.password_hash;
-    let passwordMatch = false;
+    if (Number(candidate.active) !== 1 || !candidate.password_hash) continue;
+    const passwordMatches = await bcrypt.compare(submittedPassword, candidate.password_hash);
+    if (!passwordMatches) continue;
 
-    if (activeCheck && hashCheck) {
-      passwordMatch = await bcrypt.compare(submittedPassword, candidate.password_hash);
-    }
-
-    console.log('CANDIDATE CHECK:', {
-      id: candidate.id,
-      active: candidate.active,
-      activeCheck,
-      hashCheck,
-      passwordMatch
+    const token = jwt.sign(
+      { sub: candidate.id, role: 'customer' },
+      process.env.JWT_SECRET,
+      { expiresIn }
+    );
+    return res.json({
+      token,
+      user: { id: candidate.id, name: candidate.name, email: candidate.email, role: 'customer' }
     });
-
-    if (activeCheck && hashCheck && passwordMatch) {
-      customer = candidate;
-      break;
-    }
   }
 
-  if (!customer) {
-    console.log('Login failed: no active account with matching credentials.', 'Employee found:', !!employee, 'Customer found:', customers.length > 0);
-    return res.status(401).json({ error: 'Invalid email or password.' });
-  }
-
-  const token = jwt.sign(
-    { sub: customer.id, role: 'customer' },
-    process.env.JWT_SECRET,
-    { expiresIn }
-  );
-  res.json({
-    token,
-    user: { id: customer.id, name: customer.name, email: customer.email, role: 'customer' }
-  });
+  return res.status(401).json({ error: 'Invalid email or password.' });
 }));
 
 app.post('/api/auth/customer/register', asyncRoute(async (req, res) => {
