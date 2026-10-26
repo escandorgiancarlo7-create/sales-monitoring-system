@@ -1,21 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #1e293b;
-  background: #f8fafc;
+  font-family: 'Poppins', sans-serif;
+  color: #3d2229;
+  background: #fdf8f9;
   font-synthesis: none;
-  --bs-body-font-family: 'Plus Jakarta Sans', sans-serif;
-  --ink: #1e293b;
-  --muted: #8491a3;
-  --blue: #4f46e5;
-  --border: #e8edf4;
+  --bs-body-font-family: 'Poppins', sans-serif;
+  --bs-body-color: #3d2229;
+  --bs-body-bg: #fdf8f9;
+  --bs-primary: #d47a8a;
+  --bs-primary-rgb: 212, 122, 138;
+  --bs-link-color: #b95f72;
+  --bs-link-hover-color: #9f4c60;
+  --ink: #3d2229;
+  --muted: #987d84;
+  --blue: #d47a8a;
   --panel: #fff;
-  --app-background: #f8fafc;
-  --card-shadow: 0 4px 20px rgba(15, 23, 42, .05);
+  --border: #f0e2e5;
+  --app-background: #fdf8f9;
+  --card-shadow: 0 8px 30px rgba(212, 122, 138, .1);
 }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: var(--app-background); color: var(--ink); font: 14px 'Plus Jakarta Sans', sans-serif; }
+body { margin: 0; min-width: 320px; background: var(--app-background); color: var(--ink); font: 14px 'Poppins', sans-serif; }
 button, input, select, textarea { font: inherit; }
 button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-button, .text-link, .transaction-row, .form-control, .form-select {
   transition: all .2s ease-in-out;
@@ -257,15 +263,15 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
 
 :root[data-bs-theme="dark"] {
   color-scheme: dark;
-  --ink: #e2e8f0;
-  --muted: #94a3b8;
-  --border: #334155;
-  --panel: #1e293b;
-  --app-background: #0f172a;
-  --card-shadow: 0 8px 30px rgba(0,0,0,.2);
-  --bs-body-color: #e2e8f0;
-  --bs-body-bg: #0f172a;
-  --bs-secondary-color: #94a3b8;
+  --ink: #f6e9ec;
+  --muted: #c3aab0;
+  --border: #563943;
+  --panel: #342229;
+  --app-background: #24171c;
+  --card-shadow: 0 8px 30px rgba(12, 4, 7, .24);
+  --bs-body-color: #f6e9ec;
+  --bs-body-bg: #24171c;
+  --bs-secondary-color: #c3aab0;
 }
 
 :root[data-bs-theme="dark"] body { background: var(--app-background); color: var(--ink); }
@@ -422,3 +428,77 @@ button, a, input, select, textarea, [role="button"], .btn, .nav-link, .icon-butt
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Cosmetics palette overrides shared by Admin and Bootstrap components. */
+:root h1,
+:root h2,
+:root h3,
+:root h4,
+:root .sidebar-brand strong {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+:root .btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #d47a8a;
+  --bs-btn-border-color: #d47a8a;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #bd6678;
+  --bs-btn-hover-border-color: #bd6678;
+  --bs-btn-active-bg: #a95366;
+  --bs-btn-active-border-color: #a95366;
+  border-radius: 50px;
+  background: #d47a8a;
+  border-color: #d47a8a;
+  box-shadow: 0 5px 16px rgba(212, 122, 138, .22);
+}
+:root .btn-primary:hover {
+  background: #bd6678;
+  border-color: #bd6678;
+  box-shadow: 0 6px 18px rgba(212, 122, 138, .3);
+}
+:root .summary-card,
+:root .panel,
+:root .store-product-card {
+  border: 1px solid #f0e2e5;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(212, 122, 138, .1);
+}
+:root .sidebar { background: #fff; border-color: #f0e2e5; }
+:root .brand-mark { background: linear-gradient(145deg,#e6a5b0,#c66d80); box-shadow: 0 5px 14px rgba(212,122,138,.25); }
+:root .login-screen { background: radial-gradient(ellipse at 18% 18%,rgba(212,122,138,.18),transparent 40%),linear-gradient(135deg,#fff1f3 0%,#fdf8f9 56%,#fff 100%); }
+:root .login-card { background: #fff; border: 1px solid #f0e2e5; box-shadow: 0 24px 70px rgba(92,39,52,.1); }
+:root .login-card .form-control { background: #fcf4f5; }
+:root .login-card .form-control:focus { border-color: #dca0ab; box-shadow: 0 0 0 3px rgba(212,122,138,.18); }
+:root .login-theme-toggle:hover { color: #a95366; }
+:root .nav-link.active,
+:root .nav-link.active:hover { background: linear-gradient(105deg,#c66d80,#d98b99); color: #fff; box-shadow: 0 5px 14px rgba(212,122,138,.24); }
+:root .avatar { background: #f8e9ec; color: #a85165; }
+:root .icon-button:hover { background: #f9ecef; color: #8e4959; }
+:root .topbar { background: rgba(255,255,255,.86); border-color: #f0e2e5; }
+:root .form-control:focus,
+:root .form-select:focus { border-color: #dca0ab; box-shadow: 0 0 0 .2rem rgba(212,122,138,.18); }
+:root .brand-mark,
+:root .metric-icon.purple,
+:root .product-glyph,
+:root .transaction-icon { color: #a85165; }
+:root[data-bs-theme="dark"] .summary-card,
+:root[data-bs-theme="dark"] .panel,
+:root[data-bs-theme="dark"] .store-product-card {
+  border-color: #563943;
+  background: #342229;
+  box-shadow: 0 8px 30px rgba(12,4,7,.24);
+}
+:root[data-bs-theme="dark"] .sidebar,
+:root[data-bs-theme="dark"] .topbar { background: rgba(36,23,28,.92); border-color: #563943; }
+:root[data-bs-theme="dark"] .login-screen { background: radial-gradient(ellipse at 18% 18%,rgba(212,122,138,.2),transparent 40%),linear-gradient(135deg,#24171c 0%,#342229 56%,#24171c 100%); }
+:root[data-bs-theme="dark"] .login-card { background: #342229; border-color: #563943; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+:root[data-bs-theme="dark"] .login-card .form-control { background: #24171c; border-color: #563943; }
+:root[data-bs-theme="dark"] .login-card .form-control:focus { background: #24171c; border-color: #d47a8a; }
+:root[data-bs-theme="dark"] .login-theme-toggle { background: #342229; border-color: #563943; color: #f6e9ec; }
+:root[data-bs-theme="dark"] .nav-link.active,
+:root[data-bs-theme="dark"] .nav-link.active:hover { background: linear-gradient(105deg,#a95366,#d47a8a); color: #fff; }
+:root[data-bs-theme="dark"] .avatar { background: #563943; color: #f1b5c0; }
+:root[data-bs-theme="dark"] .icon-button:hover { background: #483039; color: #f6e9ec; }
+:root[data-bs-theme="dark"] .form-control:focus,
+:root[data-bs-theme="dark"] .form-select:focus { border-color: #d47a8a; box-shadow: 0 0 0 .2rem rgba(212,122,138,.22); }

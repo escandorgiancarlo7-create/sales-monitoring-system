@@ -97,7 +97,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const [inventoryRefreshKey, setInventoryRefreshKey] = React.useState(0);
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [loadError, setLoadError] = React.useState('');
-    const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'light' ? 'light' : 'dark');
+    const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
     const cancelLogoutRef = React.useRef(null);
 
