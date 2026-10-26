@@ -1,5 +1,5 @@
 import CustomerStorefront from './pages/CustomerStorefront.jsx';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
   Menu, Moon, Package, ShoppingCart, Sun, Users, X
@@ -21,19 +21,23 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
   ];
 
   function Login({ onLogin, theme, onToggleTheme }) {
-    const [registering, setRegistering] = React.useState(false);
-    const [name, setName] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [password, setPassword] = React.useState('');
-    const [error, setError] = React.useState('');
-    const [busy, setBusy] = React.useState(false);
+    const [registering, setRegistering] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+    const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
     async function submit(event) {
       event.preventDefault();
       setBusy(true); setError('');
       try {
         const result = await api(registering ? '/auth/customer/register' : '/auth/login', {
           method: 'POST',
-          body: JSON.stringify(registering ? { name, email, password } : { email, password })
+          body: JSON.stringify(registering
+            ? { name, email, password, phone, address }
+            : { email, password })
         });
         localStorage.setItem('sales-token', result.token);
         onLogin(result.user);
@@ -61,6 +65,10 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
           {registering && <>
             <label className="form-label">Full name</label>
             <input className="form-control mb-3" type="text" autoComplete="name" required value={name} onChange={e => setName(e.target.value)} />
+            <label className="form-label">Mobile Number</label>
+            <input className="form-control mb-3" type="tel" autoComplete="tel" required value={phone} onChange={e => setPhone(e.target.value)} />
+            <label className="form-label">Address</label>
+            <input className="form-control mb-3" type="text" autoComplete="street-address" required value={address} onChange={e => setAddress(e.target.value)} />
           </>}
           <label className="form-label">Work email</label>
           <input className="form-control mb-3" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} />
@@ -227,14 +235,15 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
           />
           <div className="modal-dialog modal-dialog-centered logout-modal-dialog">
             <div
-              className="modal-content border-0 rounded-4 shadow-lg"
+              className="modal-content border-0 rounded-4 shadow-lg text-white"
+              style={{ backgroundColor: '#1e293b' }}
               role="dialog"
               aria-modal="true"
               aria-labelledby="logout-modal-title"
               aria-describedby="logout-modal-description"
             >
-              <div className="modal-header border-0 pb-0">
-                <h2 className="modal-title fs-5 fw-semibold" id="logout-modal-title">Confirm Logout</h2>
+              <div className="modal-header border-0 px-4 pt-4 pb-2">
+                <h2 className="modal-title fs-5 fw-semibold text-white" id="logout-modal-title">Confirm Logout</h2>
                 <button
                   type="button"
                   className="btn-close"
@@ -242,19 +251,19 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
                   onClick={() => setShowLogoutModal(false)}
                 />
               </div>
-              <div className="modal-body text-secondary" id="logout-modal-description">
-                Are you sure you want to end your session?
+              <div className="modal-body px-4 py-3 text-light opacity-75" id="logout-modal-description">
+                Are you sure you want to log out?
               </div>
-              <div className="modal-footer border-0 pt-0">
+              <div className="modal-footer border-0 px-4 pb-4">
                 <button
                   ref={cancelLogoutRef}
                   type="button"
-                  className="btn btn-outline-secondary"
+                  className="btn btn-outline-light rounded-pill px-4"
                   onClick={() => setShowLogoutModal(false)}
                 >
                   Cancel
                 </button>
-                <button type="button" className="btn btn-danger" onClick={logout}>
+                <button type="button" className="btn btn-danger rounded-pill px-4" onClick={logout}>
                   Log out
                 </button>
               </div>

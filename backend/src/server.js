@@ -100,9 +100,10 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
 }));
 
 app.post('/api/auth/customer/register', asyncRoute(async (req, res) => {
-  const { name, email, password } = req.body || {};
-  if (!required(name) || !required(email) || !required(password) || String(password).length < 8) {
-    return res.status(400).json({ error: 'Name, email, and a password of at least 8 characters are required.' });
+  const { name, email, password, phone, address } = req.body || {};
+  if (!required(name) || !required(email) || !required(password) ||
+      !required(phone) || !required(address) || String(password).length < 8) {
+    return res.status(400).json({ error: 'Name, email, mobile number, address, and a password of at least 8 characters are required.' });
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
@@ -124,8 +125,8 @@ app.post('/api/auth/customer/register', asyncRoute(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(String(password), 12);
   const [result] = await pool.execute(
-    'INSERT INTO customers (name, email, password_hash) VALUES (?, ?, ?)',
-    [String(name).trim(), normalizedEmail, passwordHash]
+    'INSERT INTO customers (name, email, password_hash, phone, address) VALUES (?, ?, ?, ?, ?)',
+    [String(name).trim(), normalizedEmail, passwordHash, String(phone).trim(), String(address).trim()]
   );
   const token = jwt.sign(
     { sub: result.insertId, role: 'customer' },
