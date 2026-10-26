@@ -220,6 +220,7 @@ export default function CustomerStorefront({
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -321,7 +322,7 @@ export default function CustomerStorefront({
                 <small>Customer account</small>
               </span>
             </div>
-            <button className="store-logout" type="button" onClick={onLogout}>
+            <button className="store-logout" type="button" onClick={() => setShowLogoutModal(true)}>
               <LogOut size={15} /> <span className="store-logout-copy">Log out</span>
             </button>
           </div>
@@ -504,6 +505,50 @@ export default function CustomerStorefront({
               </footer>
             )}
           </aside>
+        </>
+      )}
+
+      {showLogoutModal && (
+        <>
+          <div className="modal-backdrop fade show" />
+          <div
+            className="modal fade show d-block"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="customer-logout-title"
+            aria-describedby="customer-logout-description"
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div
+                className="modal-content border-0 rounded-4 shadow-lg"
+                style={{ backgroundColor: '#1e293b' }}
+              >
+                <div className="modal-header border-0 px-4 pt-4 pb-2">
+                  <h2 className="modal-title fs-5 fw-semibold text-white" id="customer-logout-title">
+                    Confirm Logout
+                  </h2>
+                </div>
+                <div
+                  className="modal-body px-4 py-3 text-light opacity-75"
+                  id="customer-logout-description"
+                >
+                  Are you sure you want to log out?
+                </div>
+                <div className="modal-footer border-0 px-4 pb-4">
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={() => setShowLogoutModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button className="btn btn-danger" type="button" onClick={onLogout}>
+                    Log out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>

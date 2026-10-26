@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Boxes, Plus, Search } from 'lucide-react';
 import { api, dateTime } from '../api.js';
 
-export function InventoryPage() {
+export function InventoryPage({ refreshKey = 0 }) {
   const [movements, setMovements] = useState([]);
   const [products, setProducts] = useState([]);
   const [adjusting, setAdjusting] = useState(false);
@@ -15,11 +15,14 @@ export function InventoryPage() {
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [history, inventory] = await Promise.all([api('/inventory'), api('/products')]);
+      const [history, inventory] = await Promise.all([
+        api('/inventory', { cache: 'no-store' }),
+        api('/products', { cache: 'no-store' })
+      ]);
       setMovements(history); setProducts(inventory.filter(item => item.active));
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
   async function submit(event) {
     event.preventDefault(); setSaving(true); setError('');
     try {

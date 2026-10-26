@@ -86,6 +86,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const [user, setUser] = React.useState(null);
     const [checking, setChecking] = React.useState(Boolean(localStorage.getItem('sales-token')));
     const [page, setPage] = React.useState('dashboard');
+    const [inventoryRefreshKey, setInventoryRefreshKey] = React.useState(0);
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [loadError, setLoadError] = React.useState('');
     const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'light' ? 'light' : 'dark');
@@ -151,10 +152,10 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const heading = visibleNav.find(item => item.id === page)?.label || 'Dashboard';
     const content = (() => {
       if (page === 'dashboard') return <Dashboard onNavigate={setPage} darkMode={theme === 'dark'} />;
-      if (page === 'products') return <DataPage type="products" />;
+      if (page === 'products') return <DataPage type="products" refreshKey={inventoryRefreshKey} />;
       if (page === 'customers') return <DataPage type="customers" />;
       if (page === 'employees') return <DataPage type="employees" />;
-      if (page === 'inventory') return <InventoryPage />;
+      if (page === 'inventory') return <InventoryPage refreshKey={inventoryRefreshKey} />;
       if (page === 'sales') return <SalesPage />;
       if (page === 'reports') return <ReportsPage />;
       return <Dashboard onNavigate={setPage} />;
@@ -171,7 +172,13 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
         <nav className="side-nav">
           {visibleNav.map(item => {
             const Icon = item.icon;
-            return <button key={item.id} className={`nav-link ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); setMobileOpen(false); }}>
+            return <button key={item.id} className={`nav-link ${page === item.id ? 'active' : ''}`} onClick={() => {
+              setPage(item.id);
+              if (item.id === 'products' || item.id === 'inventory') {
+                setInventoryRefreshKey(current => current + 1);
+              }
+              setMobileOpen(false);
+            }}>
               <span className="nav-icon"><Icon size={18} strokeWidth={1.8} /></span><span>{item.label}</span>
               {item.id === 'inventory' && <span className="nav-dot" />}
             </button>;

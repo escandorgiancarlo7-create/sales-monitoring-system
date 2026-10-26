@@ -42,7 +42,7 @@ const definitions = {
 
 function Status({ active }) { return <span className={`status-pill ${active ? 'status-active' : 'status-inactive'}`}><i />{active ? 'Active' : 'Inactive'}</span>; }
 
-export function DataPage({ type }) {
+export function DataPage({ type, refreshKey = 0 }) {
   const config = definitions[type];
   const [rows, setRows] = useState([]);
   const [busy, setBusy] = useState(true);
@@ -60,9 +60,9 @@ export function DataPage({ type }) {
 
   const load = useCallback(() => {
     setBusy(true);
-    api(config.endpoint).then(setRows).catch(err => setError(err.message)).finally(() => setBusy(false));
+    api(config.endpoint, { cache: 'no-store' }).then(setRows).catch(err => setError(err.message)).finally(() => setBusy(false));
   }, [config.endpoint]);
-  useEffect(load, [load]);
+  useEffect(load, [load, refreshKey]);
 
   function openForm(row = null) {
     setError(''); setNotice(''); setEditing(row); setFormOpen(true);
