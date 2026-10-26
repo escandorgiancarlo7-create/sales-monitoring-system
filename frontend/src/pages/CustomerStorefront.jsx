@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Activity, ArrowRight, Check, ChevronRight, LogOut, Minus, Moon,
+  Activity, ArrowRight, Check, CheckCircle2, ChevronRight, LogOut, Minus, Moon,
   Package, Plus, ShoppingCart, Sun, Trash2, X
 } from 'lucide-react';
 import { api, money } from '../api.js';
@@ -131,6 +131,9 @@ const storefrontStyles = `
   .store-state { min-height: 190px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--store-muted); font-size: 12px; }
   .store-state .spinner-border { width: 20px; height: 20px; color: #818cf8; }
   .store-toast { position: fixed; top: 82px; right: 28px; z-index: 60; display: flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid #166534; border-radius: 11px; color: #bbf7d0; background: #14532d; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 11px; }
+  .store-checkout-error { margin: 14px 23px 0; padding: 11px 13px; border: 1px solid rgba(248,113,113,.3); border-radius: 9px; color: #fecaca; background: rgba(127,29,29,.25); font-size: 11px; line-height: 1.5; }
+  .store-success-icon { width: 62px; height: 62px; display: grid; place-items: center; margin: 0 auto 4px; border: 1px solid rgba(74,222,128,.25); border-radius: 50%; color: #4ade80; background: rgba(34,197,94,.14); box-shadow: 0 0 26px rgba(34,197,94,.12); }
+  .store-success-modal .modal-body { color: #cbd5e1; }
   .store-backdrop { position: fixed; inset: 0; z-index: 50; border: 0; background: rgba(2,6,23,.7); backdrop-filter: blur(3px); }
   .store-cart-panel {
     position: fixed; inset: 0 0 0 auto; z-index: 51; width: min(440px,100%); display: flex; flex-direction: column;
@@ -221,6 +224,8 @@ export default function CustomerStorefront({
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [checkingOut, setCheckingOut] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -263,17 +268,18 @@ export default function CustomerStorefront({
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setCheckingOut(true);
+    setCheckoutError('');
     try {
       const items = cart.map(item => ({ product_id: item.id, quantity: item.quantity }));
       await api('/customer/checkout', {
         method: 'POST',
         body: JSON.stringify({ items })
       });
-      alert('Order placed successfully! Thank you for shopping.');
       setCart([]);
       setIsCartOpen(false);
+      setCheckoutSuccess(true);
     } catch (error) {
-      alert(`Checkout failed: ${error.message}`);
+      setCheckoutError(error.message || 'Checkout failed. Please try again.');
     } finally {
       setCheckingOut(false);
     }
@@ -441,6 +447,12 @@ export default function CustomerStorefront({
               </button>
             </header>
 
+            {checkoutError && (
+              <div className="store-checkout-error" role="alert">
+                {checkoutError}
+              </div>
+            )}
+
             <div className="store-cart-items">
               {cart.length === 0 ? (
                 <div className="store-cart-empty">
@@ -544,6 +556,45 @@ export default function CustomerStorefront({
                   </button>
                   <button className="btn btn-danger" type="button" onClick={onLogout}>
                     Log out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {checkoutSuccess && (
+        <>
+          <div className="modal-backdrop fade show" />
+          <div
+            className="modal fade show d-block"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkout-success-title"
+            aria-describedby="checkout-success-description"
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div
+                className="modal-content border-0 rounded-4 shadow-lg text-white store-success-modal"
+                style={{ backgroundColor: '#1e293b' }}
+              >
+                <div className="modal-body px-4 pt-5 pb-4 text-center">
+                  <div className="store-success-icon" aria-hidden="true">
+                    <CheckCircle2 size={34} />
+                  </div>
+                  <h2 className="modal-title fs-4 fw-semibold text-white mt-3" id="checkout-success-title">
+                    Order Successful!
+                  </h2>
+                  <p className="mb-0 mt-2" id="checkout-success-description">
+                    Thank you for shopping! Your order has been placed.
+                  </p>
+                  <button
+                    className="btn btn-primary rounded-pill px-4 mt-4"
+                    type="button"
+                    onClick={() => setCheckoutSuccess(false)}
+                  >
+                    Continue Shopping
                   </button>
                 </div>
               </div>
