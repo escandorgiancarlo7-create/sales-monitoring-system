@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Activity, ArrowUpRight, Check, ChevronRight, LogOut, Minus, Moon,
+  Activity, ArrowRight, Check, ChevronRight, LogOut, Minus, Moon,
   Package, Plus, ShoppingCart, Sun, Trash2, X
 } from 'lucide-react';
 import { api, money } from '../api.js';
@@ -48,8 +48,8 @@ const storefrontStyles = `
     border-radius: 10px; color: var(--store-muted); font-size: 12px; font-weight: 600; text-decoration: none;
   }
   .store-nav-link.active { color: white; background: linear-gradient(105deg,#4f46e5,#6366f1); box-shadow: 0 6px 18px rgba(79,70,229,.24); }
-  .store-nav-link > span:first-child { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; }
-  .store-nav-link.active > span:first-child { background: rgba(255,255,255,.15); }
+  .store-nav-icon { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; }
+  .store-nav-link.active .store-nav-icon { background: rgba(255,255,255,.15); }
   .store-sidebar-bottom { margin-top: auto; padding: 16px 4px 0; border-top: 1px solid var(--store-border); }
   .store-profile { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .store-avatar {
@@ -127,6 +127,7 @@ const storefrontStyles = `
   }
   .store-add-button { min-height: 35px; padding: 0 11px; border-radius: 9px; font-size: 10px; white-space: nowrap; }
   .store-add-button:hover,.store-checkout-button:hover:not(:disabled) { background: linear-gradient(105deg,#4338ca,#4f46e5); box-shadow: 0 0 20px rgba(99,102,241,.38); }
+  .store-add-button:disabled { cursor: not-allowed; opacity: .45; }
   .store-state { min-height: 190px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--store-muted); font-size: 12px; }
   .store-state .spinner-border { width: 20px; height: 20px; color: #818cf8; }
   .store-toast { position: fixed; top: 82px; right: 28px; z-index: 60; display: flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid #166534; border-radius: 11px; color: #bbf7d0; background: #14532d; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 11px; }
@@ -174,7 +175,7 @@ const storefrontStyles = `
     .store-brand-copy,.store-section-label,.store-nav-copy,.store-profile-copy,.store-logout-copy { display: none; }
     .store-brand-mark { width: 39px; height: 39px; }
     .store-nav-link { width: 48px; justify-content: center; padding: 0; }
-    .store-nav-link > span { width: 34px; height: 34px; }
+    .store-nav-icon { width: 34px; height: 34px; }
     .store-sidebar-bottom { width: 100%; padding: 14px 0 0; }
     .store-profile { justify-content: center; }
     .store-avatar { width: 34px; height: 34px; }
@@ -209,7 +210,12 @@ const storefrontStyles = `
   }
 `;
 
-export default function CustomerStorefront({ user, onLogout, theme, onToggleTheme }) {
+export default function CustomerStorefront({
+  user,
+  onLogout,
+  theme = 'dark',
+  onToggleTheme
+}) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
@@ -302,7 +308,7 @@ export default function CustomerStorefront({ user, onLogout, theme, onToggleThem
           <div className="store-section-label">WORKSPACE</div>
           <nav aria-label="Customer navigation">
             <a className="store-nav-link active" href="#storefront" aria-current="page">
-              <span><Package size={17} /></span>
+              <span className="store-nav-icon"><Package size={17} /></span>
               <span className="store-nav-copy">Storefront</span>
             </a>
           </nav>
@@ -327,15 +333,17 @@ export default function CustomerStorefront({ user, onLogout, theme, onToggleThem
               <span>Workspace</span><ChevronRight size={13} /><strong>Storefront</strong>
             </div>
             <div className="store-topbar-actions">
-              <button
-                className="store-icon-button"
-                type="button"
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
+              {onToggleTheme && (
+                <button
+                  className="store-icon-button"
+                  type="button"
+                  onClick={onToggleTheme}
+                  aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+              )}
               <button
                 className="store-cart-button"
                 type="button"
@@ -439,7 +447,7 @@ export default function CustomerStorefront({ user, onLogout, theme, onToggleThem
                   <strong>Your cart is empty</strong>
                   <span>Add something you love and it will appear here.</span>
                   <button type="button" onClick={() => setIsCartOpen(false)}>
-                    Continue shopping <ArrowUpRight size={13} />
+                    Continue shopping <ArrowRight size={13} />
                   </button>
                 </div>
               ) : cart.map(item => (
