@@ -88,7 +88,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const [page, setPage] = React.useState('dashboard');
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [loadError, setLoadError] = React.useState('');
-    const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'dark' ? 'dark' : 'light');
+    const [theme, setTheme] = React.useState(() => localStorage.getItem('sales-theme') === 'light' ? 'light' : 'dark');
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
     const cancelLogoutRef = React.useRef(null);
 
@@ -138,7 +138,14 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
       />
       {loadError && <div className="login-toast">{loadError}</div>}
     </>;
-    if (user.role === 'customer') return <CustomerStorefront user={user} onLogout={logout} />;
+    if (user.role === 'customer') return (
+      <CustomerStorefront
+        user={user}
+        onLogout={logout}
+        theme={theme}
+        onToggleTheme={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+      />
+    );
 
     const visibleNav = navItems.filter(item => !item.roles || item.roles.includes(user.role));
     const heading = visibleNav.find(item => item.id === page)?.label || 'Dashboard';

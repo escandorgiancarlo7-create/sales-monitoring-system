@@ -1,8 +1,215 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, LogOut, Plus, Minus, Trash2, ShoppingBag, Package, X } from 'lucide-react';
+import {
+  Activity, ArrowUpRight, Check, ChevronRight, LogOut, Minus, Moon,
+  Package, Plus, ShoppingCart, Sun, Trash2, X
+} from 'lucide-react';
 import { api, money } from '../api.js';
 
-export default function CustomerStorefront({ user, onLogout }) {
+const storefrontStyles = `
+  .customer-storefront {
+    --store-bg: #0f172a;
+    --store-panel: #1e293b;
+    --store-panel-raised: #243247;
+    --store-border: #334155;
+    --store-text: #e2e8f0;
+    --store-muted: #94a3b8;
+    --store-accent: #6366f1;
+    min-height: 100vh;
+    color: var(--store-text);
+    background: var(--store-bg);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .customer-storefront.theme-light {
+    --store-bg: #f5f7fb;
+    --store-panel: #fff;
+    --store-panel-raised: #f1f5f9;
+    --store-border: #e2e8f0;
+    --store-text: #1e293b;
+    --store-muted: #64748b;
+  }
+  .customer-storefront * { box-sizing: border-box; }
+  .store-layout { min-height: 100vh; }
+  .store-sidebar {
+    position: fixed; inset: 0 auto 0 0; z-index: 20; width: 250px;
+    display: flex; flex-direction: column; padding: 24px 16px 18px;
+    background: var(--store-panel); border-right: 1px solid var(--store-border);
+  }
+  .store-brand { display: flex; align-items: center; gap: 11px; padding: 0 9px 34px; color: var(--store-text); }
+  .store-brand-mark {
+    width: 38px; height: 38px; display: grid; place-items: center; flex: none;
+    border-radius: 11px; color: white; background: linear-gradient(145deg,#818cf8,#4f46e5);
+    box-shadow: 0 5px 18px rgba(99,102,241,.35);
+  }
+  .store-brand strong { display: block; font-size: 14px; letter-spacing: -.35px; }
+  .store-brand small { display: block; margin-top: 3px; color: var(--store-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+  .store-section-label { padding: 0 12px 10px; color: var(--store-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.35px; }
+  .store-nav-link {
+    min-height: 42px; display: flex; align-items: center; gap: 11px; padding: 0 12px;
+    border-radius: 10px; color: var(--store-muted); font-size: 12px; font-weight: 600; text-decoration: none;
+  }
+  .store-nav-link.active { color: white; background: linear-gradient(105deg,#4f46e5,#6366f1); box-shadow: 0 6px 18px rgba(79,70,229,.24); }
+  .store-nav-link > span:first-child { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; }
+  .store-nav-link.active > span:first-child { background: rgba(255,255,255,.15); }
+  .store-sidebar-bottom { margin-top: auto; padding: 16px 4px 0; border-top: 1px solid var(--store-border); }
+  .store-profile { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .store-avatar {
+    width: 35px; height: 35px; display: grid; place-items: center; flex: none;
+    border-radius: 50%; color: #c7d2fe; background: rgba(99,102,241,.2); font-size: 11px; font-weight: 800;
+  }
+  .store-profile-copy { min-width: 0; flex: 1; }
+  .store-profile-copy strong,.store-profile-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .store-profile-copy strong { color: var(--store-text); font-size: 11px; }
+  .store-profile-copy small { margin-top: 3px; color: var(--store-muted); font-size: 10px; text-transform: capitalize; }
+  .store-logout {
+    width: 100%; min-height: 37px; display: flex; align-items: center; gap: 9px; margin-top: 13px;
+    padding: 0 10px; border: 1px solid var(--store-border); border-radius: 9px;
+    color: var(--store-muted); background: transparent; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .store-logout:hover { color: #fca5a5; border-color: #7f1d1d; background: rgba(127,29,29,.16); }
+  .store-main { min-height: 100vh; margin-left: 250px; }
+  .store-topbar {
+    height: 68px; position: sticky; top: 0; z-index: 15; display: flex; align-items: center;
+    justify-content: space-between; gap: 18px; padding: 0 36px;
+    background: color-mix(in srgb, var(--store-bg) 88%, transparent); border-bottom: 1px solid var(--store-border);
+    backdrop-filter: blur(16px);
+  }
+  .store-breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--store-muted); font-size: 11px; }
+  .store-breadcrumb strong { color: var(--store-text); font-weight: 600; }
+  .store-topbar-actions { display: flex; align-items: center; gap: 10px; }
+  .store-icon-button,.store-cart-button {
+    height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid var(--store-border); border-radius: 10px; color: var(--store-text);
+    background: var(--store-panel); cursor: pointer;
+  }
+  .store-icon-button { width: 38px; }
+  .store-cart-button { position: relative; padding: 0 13px; font-size: 11px; font-weight: 700; }
+  .store-cart-button:hover,.store-icon-button:hover { border-color: #6366f1; background: var(--store-panel-raised); }
+  .store-cart-badge {
+    min-width: 19px; height: 19px; display: grid; place-items: center; margin-left: 2px;
+    padding: 0 5px; border-radius: 20px; color: white; background: #ef4444; font-size: 9px; font-weight: 800;
+    box-shadow: 0 0 12px rgba(239,68,68,.45);
+  }
+  .store-content { max-width: 1500px; margin: 0 auto; padding: 34px 36px 52px; }
+  .store-welcome {
+    position: relative; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    min-height: 172px; margin-bottom: 34px; padding: 30px 34px; overflow: hidden;
+    border: 1px solid rgba(129,140,248,.24); border-radius: 20px;
+    background: radial-gradient(circle at 85% 20%,rgba(129,140,248,.22),transparent 30%),linear-gradient(115deg,#1e1b4b,#27245c 60%,#312e81);
+  }
+  .store-welcome::after { position: absolute; right: 80px; width: 180px; height: 180px; border: 1px solid rgba(199,210,254,.1); border-radius: 50%; content: ""; }
+  .store-welcome-copy { position: relative; z-index: 1; }
+  .store-eyebrow { margin: 0 0 9px; color: #a5b4fc; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; }
+  .store-welcome h1 { margin: 0; color: white; font-size: clamp(24px,3vw,34px); font-weight: 750; letter-spacing: -1.1px; }
+  .store-welcome p:last-child { margin: 8px 0 0; color: #c7d2fe; font-size: 12px; }
+  .store-welcome-icon { position: relative; z-index: 1; width: 70px; height: 70px; display: grid; place-items: center; flex: none; border: 1px solid rgba(255,255,255,.2); border-radius: 20px; color: #e0e7ff; background: rgba(255,255,255,.09); }
+  .store-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 18px; }
+  .store-section-heading h2 { margin: 0; color: var(--store-text); font-size: 19px; font-weight: 700; letter-spacing: -.45px; }
+  .store-section-heading p { margin: 5px 0 0; color: var(--store-muted); font-size: 11px; }
+  .store-product-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 17px; }
+  .store-product-card {
+    min-width: 0; overflow: hidden; border: 1px solid var(--store-border); border-radius: 16px;
+    background: var(--store-panel); box-shadow: 0 8px 26px rgba(2,6,23,.15); transition: transform .18s,border-color .18s,box-shadow .18s;
+  }
+  .store-product-card:hover { transform: translateY(-3px); border-color: #4f46e5; box-shadow: 0 12px 30px rgba(2,6,23,.25); }
+  .store-product-art { height: 148px; display: grid; place-items: center; color: #a5b4fc; background: radial-gradient(circle at 50% 45%,rgba(99,102,241,.2),transparent 60%),linear-gradient(145deg,#263449,#1e293b); }
+  .theme-light .store-product-art { background: radial-gradient(circle at 50% 45%,rgba(99,102,241,.13),transparent 60%),linear-gradient(145deg,#eef2ff,#e2e8f0); }
+  .store-product-art > span { width: 76px; height: 76px; display: grid; place-items: center; border: 1px solid rgba(165,180,252,.25); border-radius: 22px; background: rgba(99,102,241,.14); box-shadow: 0 10px 25px rgba(79,70,229,.14); }
+  .store-product-info { padding: 17px; }
+  .store-product-info h3 { min-height: 38px; margin: 0; color: var(--store-text); font-size: 13px; font-weight: 700; line-height: 1.5; }
+  .store-product-description { min-height: 36px; margin: 6px 0 0; color: var(--store-muted); font-size: 10px; line-height: 1.6; }
+  .store-product-bottom { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-top: 16px; }
+  .store-product-price { color: #c7d2fe; font-size: 16px; font-weight: 800; letter-spacing: -.3px; white-space: nowrap; }
+  .theme-light .store-product-price { color: #4338ca; }
+  .store-add-button,.store-checkout-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0;
+    color: white; background: linear-gradient(105deg,#4f46e5,#6366f1); font-weight: 700; cursor: pointer;
+    box-shadow: 0 5px 16px rgba(79,70,229,.25);
+  }
+  .store-add-button { min-height: 35px; padding: 0 11px; border-radius: 9px; font-size: 10px; white-space: nowrap; }
+  .store-add-button:hover,.store-checkout-button:hover:not(:disabled) { background: linear-gradient(105deg,#4338ca,#4f46e5); box-shadow: 0 0 20px rgba(99,102,241,.38); }
+  .store-state { min-height: 190px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--store-muted); font-size: 12px; }
+  .store-state .spinner-border { width: 20px; height: 20px; color: #818cf8; }
+  .store-toast { position: fixed; top: 82px; right: 28px; z-index: 60; display: flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid #166534; border-radius: 11px; color: #bbf7d0; background: #14532d; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 11px; }
+  .store-backdrop { position: fixed; inset: 0; z-index: 50; border: 0; background: rgba(2,6,23,.7); backdrop-filter: blur(3px); }
+  .store-cart-panel {
+    position: fixed; inset: 0 0 0 auto; z-index: 51; width: min(440px,100%); display: flex; flex-direction: column;
+    color: var(--store-text); background: var(--store-panel); border-left: 1px solid var(--store-border);
+    box-shadow: -18px 0 50px rgba(0,0,0,.35); animation: store-slide-in .2s ease-out;
+  }
+  @keyframes store-slide-in { from { transform: translateX(24px); opacity: .7; } to { transform: translateX(0); opacity: 1; } }
+  .store-cart-header { display: flex; align-items: center; justify-content: space-between; padding: 22px 23px; border-bottom: 1px solid var(--store-border); }
+  .store-cart-title { display: flex; align-items: center; gap: 10px; }
+  .store-cart-title > span { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 10px; color: #c7d2fe; background: rgba(99,102,241,.17); }
+  .store-cart-title h2 { margin: 0; color: var(--store-text); font-size: 15px; font-weight: 700; }
+  .store-cart-title p { margin: 3px 0 0; color: var(--store-muted); font-size: 10px; }
+  .store-close-button { width: 35px; height: 35px; display: grid; place-items: center; border: 1px solid var(--store-border); border-radius: 9px; color: var(--store-muted); background: var(--store-panel-raised); cursor: pointer; }
+  .store-cart-items { flex: 1; overflow-y: auto; padding: 0 23px; }
+  .store-cart-item { display: flex; align-items: flex-start; gap: 12px; padding: 17px 0; border-bottom: 1px solid var(--store-border); }
+  .store-cart-item-art { width: 46px; height: 46px; display: grid; place-items: center; flex: none; border-radius: 11px; color: #a5b4fc; background: rgba(99,102,241,.16); }
+  .store-cart-item-main { min-width: 0; flex: 1; }
+  .store-cart-item-main strong { display: block; color: var(--store-text); font-size: 11px; line-height: 1.5; }
+  .store-cart-item-main > span { display: block; margin-top: 4px; color: #a5b4fc; font-size: 11px; font-weight: 700; }
+  .store-quantity { display: flex; align-items: center; gap: 10px; margin-top: 9px; color: var(--store-text); font-size: 11px; }
+  .store-quantity button { width: 23px; height: 23px; display: grid; place-items: center; border: 1px solid var(--store-border); border-radius: 6px; color: var(--store-text); background: var(--store-panel-raised); cursor: pointer; }
+  .store-remove-button { padding: 6px; border: 0; border-radius: 7px; color: var(--store-muted); background: transparent; cursor: pointer; }
+  .store-remove-button:hover { color: #fca5a5; background: rgba(127,29,29,.2); }
+  .store-cart-empty { min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: var(--store-muted); text-align: center; }
+  .store-cart-empty strong { color: var(--store-text); font-size: 13px; }
+  .store-cart-empty span { max-width: 240px; font-size: 10px; line-height: 1.6; }
+  .store-cart-empty button { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 8px 11px; border: 1px solid var(--store-border); border-radius: 8px; color: #c7d2fe; background: var(--store-panel-raised); font-size: 10px; font-weight: 700; cursor: pointer; }
+  .store-cart-footer { padding: 19px 23px 23px; border-top: 1px solid var(--store-border); }
+  .store-total { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; color: var(--store-muted); font-size: 11px; }
+  .store-total strong { color: var(--store-text); font-size: 19px; font-weight: 800; }
+  .store-checkout-button { width: 100%; min-height: 45px; border-radius: 10px; font-size: 11px; }
+  .store-checkout-button:disabled { opacity: .65; cursor: wait; }
+  .store-cart-footer > small { display: block; margin-top: 10px; color: var(--store-muted); font-size: 9px; text-align: center; }
+  @media (max-width: 900px) {
+    .store-content { padding: 26px 22px 42px; }
+    .store-topbar { padding: 0 22px; }
+    .store-product-grid { grid-template-columns: repeat(auto-fill,minmax(205px,1fr)); gap: 13px; }
+  }
+  @media (max-width: 650px) {
+    .store-sidebar { width: 68px; padding: 19px 9px 14px; align-items: center; }
+    .store-brand { padding: 0 0 29px; }
+    .store-brand-copy,.store-section-label,.store-nav-copy,.store-profile-copy,.store-logout-copy { display: none; }
+    .store-brand-mark { width: 39px; height: 39px; }
+    .store-nav-link { width: 48px; justify-content: center; padding: 0; }
+    .store-nav-link > span { width: 34px; height: 34px; }
+    .store-sidebar-bottom { width: 100%; padding: 14px 0 0; }
+    .store-profile { justify-content: center; }
+    .store-avatar { width: 34px; height: 34px; }
+    .store-logout { justify-content: center; padding: 0; }
+    .store-main { margin-left: 68px; }
+    .store-topbar { height: 60px; padding: 0 13px; }
+    .store-breadcrumb { gap: 4px; font-size: 10px; }
+    .store-topbar-actions { gap: 6px; }
+    .store-icon-button { width: 34px; height: 34px; }
+    .store-cart-button { height: 34px; gap: 5px; padding: 0 9px; font-size: 10px; }
+    .store-content { padding: 19px 13px 35px; }
+    .store-welcome { min-height: 150px; margin-bottom: 25px; padding: 23px 19px; border-radius: 15px; }
+    .store-welcome-icon { width: 50px; height: 50px; border-radius: 15px; }
+    .store-welcome-icon svg { width: 25px; }
+    .store-welcome h1 { font-size: 24px; }
+    .store-welcome p:last-child { max-width: 250px; font-size: 10px; line-height: 1.5; }
+    .store-product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .store-product-art { height: 112px; }
+    .store-product-info { padding: 11px; }
+    .store-product-info h3 { min-height: 37px; font-size: 11px; }
+    .store-product-description { min-height: 32px; font-size: 9px; }
+    .store-product-bottom { align-items: flex-start; flex-direction: column; margin-top: 11px; }
+    .store-product-price { font-size: 14px; }
+    .store-add-button { width: 100%; min-height: 32px; }
+  }
+  @media (max-width: 370px) {
+    .store-main { margin-left: 58px; }
+    .store-sidebar { width: 58px; }
+    .store-content { padding-right: 10px; padding-left: 10px; }
+    .store-product-grid { grid-template-columns: 1fr; }
+    .store-product-art { height: 140px; }
+  }
+`;
+
+export default function CustomerStorefront({ user, onLogout, theme, onToggleTheme }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
@@ -13,7 +220,7 @@ export default function CustomerStorefront({ user, onLogout }) {
   useEffect(() => {
     api('/products')
       .then(data => setProducts(data))
-      .catch(err => console.error("Failed to load products:", err))
+      .catch(err => console.error('Failed to load products:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -65,147 +272,232 @@ export default function CustomerStorefront({ user, onLogout }) {
     }
   };
 
+  const initials = String(user?.name || 'Customer')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Toast Message */}
+    <div className={`customer-storefront theme-${theme === 'light' ? 'light' : 'dark'}`}>
+      <style>{storefrontStyles}</style>
       {message && (
-        <div className="position-fixed top-0 start-50 translate-middle-x mt-3 px-4 py-2 bg-success text-white rounded-pill shadow-lg" style={{ zIndex: 1050 }}>
-          {message}
+        <div className="store-toast" role="status" aria-live="polite">
+          <Check size={15} /> {message}
         </div>
       )}
 
-      {/* Modern Header */}
-      <header className="bg-white border-bottom sticky-top px-4 py-3 shadow-sm d-flex justify-content-between align-items-center">
-        <div className="d-flex align-items-center gap-3">
-          <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-            <ShoppingBag size={20} />
+      <div className="store-layout">
+        <aside className="store-sidebar">
+          <div className="store-brand">
+            <span className="store-brand-mark"><Activity size={20} /></span>
+            <span className="store-brand-copy">
+              <strong>Sales Monitor</strong>
+              <small>CUSTOMER PORTAL</small>
+            </span>
           </div>
-          <h4 className="m-0 fw-bold text-dark">Sales Monitor Store</h4>
-        </div>
-        
-        <div className="d-flex align-items-center gap-4">
-          <span className="text-secondary d-none d-md-block">Welcome, <strong>{user.name}</strong></span>
-          
-          <button 
-            className="btn btn-light position-relative border shadow-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingCart size={18} />
-            <span className="fw-semibold">Cart</span>
-            {cartItemCount > 0 && (
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                {cartItemCount}
+
+          <div className="store-section-label">WORKSPACE</div>
+          <nav aria-label="Customer navigation">
+            <a className="store-nav-link active" href="#storefront" aria-current="page">
+              <span><Package size={17} /></span>
+              <span className="store-nav-copy">Storefront</span>
+            </a>
+          </nav>
+
+          <div className="store-sidebar-bottom">
+            <div className="store-profile">
+              <span className="store-avatar" aria-hidden="true">{initials}</span>
+              <span className="store-profile-copy">
+                <strong>{user?.name || 'Customer'}</strong>
+                <small>Customer account</small>
               </span>
-            )}
-          </button>
-
-          <button className="btn btn-outline-danger d-flex align-items-center gap-2 rounded-pill px-3" onClick={onLogout}>
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container py-5">
-        <div className="d-flex justify-content-between align-items-end mb-4">
-          <div>
-            <h2 className="fw-bold mb-1">Discover Products</h2>
-            <p className="text-secondary m-0">Explore our latest Chu Chu Beauty collection.</p>
+            </div>
+            <button className="store-logout" type="button" onClick={onLogout}>
+              <LogOut size={15} /> <span className="store-logout-copy">Log out</span>
+            </button>
           </div>
-        </div>
+        </aside>
 
-        {loading ? (
-          <div className="d-flex justify-content-center py-5">
-            <div className="spinner-border text-primary" role="status"></div>
-          </div>
-        ) : (
-          <div className="row g-4">
-            {products.map(p => (
-              <div className="col-12 col-md-6 col-lg-4" key={p.id}>
-                <div className="card h-100 border-0 shadow-sm rounded-4 product-card">
-                  <div className="card-body p-4 d-flex flex-column">
-                    <div className="bg-light rounded-3 d-flex align-items-center justify-content-center mb-3" style={{ height: '180px' }}>
-                      <Package size={64} className="text-secondary opacity-50" />
-                    </div>
-                    <h5 className="fw-bold mb-1">{p.name}</h5>
-                    <p className="text-secondary small mb-3 flex-grow-1">{p.description || 'No description available.'}</p>
-                    <div className="d-flex justify-content-between align-items-center mt-auto">
-                      <h4 className="text-primary fw-bold m-0">{money(p.price)}</h4>
-                      <button 
-                        className="btn btn-primary px-4 rounded-pill shadow-sm"
-                        onClick={() => addToCart(p)}
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Cart Sidebar (Offcanvas) */}
-      <div className={`offcanvas offcanvas-end ${isCartOpen ? 'show' : ''}`} tabIndex="-1" style={{ visibility: isCartOpen ? 'visible' : 'hidden', width: '400px' }}>
-        <div className="offcanvas-header bg-light border-bottom">
-          <h5 className="offcanvas-title fw-bold d-flex align-items-center gap-2">
-            <ShoppingCart size={20} /> Your Cart ({cartItemCount})
-          </h5>
-          <button type="button" className="btn-close" onClick={() => setIsCartOpen(false)}></button>
-        </div>
-        <div className="offcanvas-body p-0 d-flex flex-column">
-          <div className="flex-grow-1 overflow-auto p-4">
-            {cart.length === 0 ? (
-              <div className="text-center text-secondary mt-5">
-                <ShoppingCart size={48} className="mb-3 opacity-50" />
-                <p>Your cart is empty.</p>
-              </div>
-            ) : (
-              <div className="d-flex flex-column gap-3">
-                {cart.map(item => (
-                  <div key={item.id} className="d-flex align-items-center gap-3 border-bottom pb-3">
-                    <div className="bg-light rounded p-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                      <Package size={24} className="text-secondary" />
-                    </div>
-                    <div className="flex-grow-1">
-                      <h6 className="mb-1 fw-bold">{item.name}</h6>
-                      <div className="text-primary fw-semibold">{money(item.price)}</div>
-                    </div>
-                    <div className="d-flex flex-column align-items-end gap-2">
-                      <div className="input-group input-group-sm" style={{ width: '100px' }}>
-                        <button className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, -1)}><Minus size={12}/></button>
-                        <input type="text" className="form-control text-center" value={item.quantity} readOnly />
-                        <button className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, 1)}><Plus size={12}/></button>
-                      </div>
-                      <button className="btn btn-link text-danger p-0 text-decoration-none" onClick={() => removeFromCart(item.id)}>
-                        <Trash2 size={14} /> Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {cart.length > 0 && (
-            <div className="border-top p-4 bg-light">
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-secondary">Total</span>
-                <h4 className="fw-bold text-primary mb-0">{money(cartTotal)}</h4>
-              </div>
-              <button 
-                className="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                onClick={handleCheckout}
-                disabled={checkingOut}
+        <div className="store-main" id="storefront">
+          <header className="store-topbar">
+            <div className="store-breadcrumb" aria-label="Breadcrumb">
+              <span>Workspace</span><ChevronRight size={13} /><strong>Storefront</strong>
+            </div>
+            <div className="store-topbar-actions">
+              <button
+                className="store-icon-button"
+                type="button"
+                onClick={onToggleTheme}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
-                {checkingOut ? 'Processing...' : 'Checkout Now'}
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+              <button
+                className="store-cart-button"
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                aria-label={`Open cart, ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'items'}`}
+              >
+                <ShoppingCart size={16} /><span>Cart</span>
+                {cartItemCount > 0 && <span className="store-cart-badge">{cartItemCount}</span>}
               </button>
             </div>
-          )}
+          </header>
+
+          <main className="store-content">
+            <section className="store-welcome">
+              <div className="store-welcome-copy">
+                <p className="store-eyebrow">YOUR CUSTOMER PORTAL</p>
+                <h1>Welcome, {user?.name?.split(' ')[0] || 'there'}</h1>
+                <p>Discover products from our collection and shop with confidence.</p>
+              </div>
+              <div className="store-welcome-icon" aria-hidden="true"><ShoppingCart size={32} /></div>
+            </section>
+
+            <section aria-labelledby="store-products-heading">
+              <div className="store-section-heading">
+                <div>
+                  <h2 id="store-products-heading">Discover Products</h2>
+                  <p>Explore our latest collection.</p>
+                </div>
+                {!loading && <span className="store-breadcrumb">{products.length} products</span>}
+              </div>
+
+              {loading ? (
+                <div className="store-state" role="status">
+                  <span className="spinner-border" aria-hidden="true" /> Loading products…
+                </div>
+              ) : products.length === 0 ? (
+                <div className="store-state">No products are available right now. Please check back soon.</div>
+              ) : (
+                <div className="store-product-grid">
+                  {products.map(product => (
+                    <article className="store-product-card" key={product.id}>
+                      <div className="store-product-art" aria-hidden="true">
+                        <span><Package size={37} strokeWidth={1.5} /></span>
+                      </div>
+                      <div className="store-product-info">
+                        <h3>{product.name}</h3>
+                        <p className="store-product-description">
+                          {product.description || 'No description available.'}
+                        </p>
+                        <div className="store-product-bottom">
+                          <strong className="store-product-price">{money(product.price)}</strong>
+                          <button
+                            className="store-add-button"
+                            type="button"
+                            onClick={() => addToCart(product)}
+                          >
+                            <Plus size={14} /> Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </main>
         </div>
       </div>
-      {isCartOpen && <div className="offcanvas-backdrop fade show" onClick={() => setIsCartOpen(false)}></div>}
+
+      {isCartOpen && (
+        <>
+          <button
+            className="store-backdrop"
+            type="button"
+            aria-label="Close cart"
+            onClick={() => setIsCartOpen(false)}
+          />
+          <aside className="store-cart-panel" role="dialog" aria-modal="true" aria-labelledby="store-cart-heading">
+            <header className="store-cart-header">
+              <div className="store-cart-title">
+                <span><ShoppingCart size={17} /></span>
+                <div>
+                  <h2 id="store-cart-heading">Your Cart</h2>
+                  <p>{cartItemCount} {cartItemCount === 1 ? 'item' : 'items'} in your bag</p>
+                </div>
+              </div>
+              <button
+                className="store-close-button"
+                type="button"
+                onClick={() => setIsCartOpen(false)}
+                aria-label="Close cart"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            <div className="store-cart-items">
+              {cart.length === 0 ? (
+                <div className="store-cart-empty">
+                  <ShoppingCart size={36} />
+                  <strong>Your cart is empty</strong>
+                  <span>Add something you love and it will appear here.</span>
+                  <button type="button" onClick={() => setIsCartOpen(false)}>
+                    Continue shopping <ArrowUpRight size={13} />
+                  </button>
+                </div>
+              ) : cart.map(item => (
+                <div className="store-cart-item" key={item.id}>
+                  <div className="store-cart-item-art"><Package size={21} /></div>
+                  <div className="store-cart-item-main">
+                    <strong>{item.name}</strong>
+                    <span>{money(item.price)}</span>
+                    <div className="store-quantity" aria-label={`Quantity: ${item.quantity}`}>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, -1)}
+                        aria-label={`Decrease ${item.name} quantity`}
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, 1)}
+                        aria-label={`Increase ${item.name} quantity`}
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="store-remove-button"
+                    type="button"
+                    onClick={() => removeFromCart(item.id)}
+                    aria-label={`Remove ${item.name} from cart`}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {cart.length > 0 && (
+              <footer className="store-cart-footer">
+                <div className="store-total">
+                  <span>Order total</span>
+                  <strong>{money(cartTotal)}</strong>
+                </div>
+                <button
+                  className="store-checkout-button"
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={checkingOut}
+                >
+                  {checkingOut ? 'Processing…' : <>Proceed to Checkout <ChevronRight size={15} /></>}
+                </button>
+                <small>Secure checkout · Taxes calculated at checkout</small>
+              </footer>
+            )}
+          </aside>
+        </>
+      )}
     </div>
   );
 }
