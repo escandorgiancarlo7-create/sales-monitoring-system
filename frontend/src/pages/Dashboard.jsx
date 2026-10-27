@@ -27,7 +27,7 @@ export function Dashboard({ onNavigate, darkMode = false }) {
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => money(context.raw) } } },
     scales: {
       x: { grid: { display: false }, ticks: { color: darkMode ? '#94a3b8' : '#8791a4' }, border: { display: false } },
-      y: { grid: { display: false }, ticks: { color: darkMode ? '#94a3b8' : '#8791a4', callback: value => `$${value}` }, border: { display: false } }
+      y: { grid: { display: false }, ticks: { color: darkMode ? '#94a3b8' : '#8791a4', callback: value => money(value) }, border: { display: false } }
     }
   };
   const cards = [

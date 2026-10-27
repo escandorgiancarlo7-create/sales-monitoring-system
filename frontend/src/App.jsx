@@ -1,7 +1,7 @@
 import CustomerStorefront from './pages/CustomerStorefront.jsx';
 import React, { useState } from 'react';
 import {
-  Activity, Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
+  Boxes, ChartNoAxesCombined, ContactRound, LayoutDashboard, LogOut,
   Menu, Moon, Package, ShoppingCart, Sun, Users, X
 } from 'lucide-react';
 import { api } from './api.js';
@@ -54,7 +54,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
         {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
       </button>
       <section className="login-card">
-        <div className="brand-mark"><Activity size={24} /></div>
+        <img src="/logo.png" alt="GlowTrack Logo" style={{ height: '50px', width: 'auto' }} />
         <p className="eyebrow mt-4">SALES MONITOR</p>
         <h1>{registering ? 'Create your account' : 'Welcome back'}</h1>
         <p className="text-secondary mb-4">
@@ -172,7 +172,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     return <div className="app-shell">
       <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="brand-mark"><Activity size={22} /></div>
+          <img src="/logo.png" alt="GlowTrack Logo" style={{ height: '35px', width: 'auto' }} />
           <div><strong>Sales Monitor</strong><small>BUSINESS SUITE</small></div>
           <button className="icon-button sidebar-close d-lg-none" aria-label="Close menu" onClick={() => setMobileOpen(false)}><X size={18} /></button>
         </div>

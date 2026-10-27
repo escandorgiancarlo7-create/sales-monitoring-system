@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Activity, ArrowRight, Check, CheckCircle2, ChevronRight, LogOut, Minus, Moon,
+  ArrowRight, Check, CheckCircle2, ChevronRight, LogOut, Minus, Moon,
   Package, Plus, ShoppingCart, Sun, Trash2, X
 } from 'lucide-react';
 import { api, money } from '../api.js';
@@ -305,7 +305,7 @@ export default function CustomerStorefront({
       <div className="store-layout">
         <aside className="store-sidebar">
           <div className="store-brand">
-            <span className="store-brand-mark"><Activity size={20} /></span>
+            <span className="store-brand-mark"><img src="/logo.png" alt="GlowTrack Logo" style={{ height: '40px', width: 'auto' }} /></span>
             <span className="store-brand-copy">
               <strong>Sales Monitor</strong>
               <small>CUSTOMER PORTAL</small>
