@@ -25,6 +25,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
@@ -32,7 +33,12 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     const [busy, setBusy] = useState(false);
     async function submit(event) {
       event.preventDefault();
-      setBusy(true); setError('');
+      setError('');
+      if (registering && password !== confirmPassword) {
+        setError('Passwords do not match. Please try again.');
+        return;
+      }
+      setBusy(true);
       try {
         const result = await api(registering ? '/auth/customer/register' : '/auth/login', {
           method: 'POST',
@@ -85,6 +91,17 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {registering && <>
+            <label className="form-label">Confirm Password</label>
+            <input
+              className="form-control mb-4"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+            />
+          </>}
           <button className="btn btn-primary w-100 py-2" disabled={busy}>
             {busy ? 'Please wait…' : registering ? 'Create customer account' : 'Sign in'}
           </button>
@@ -92,7 +109,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
         <button
           className="text-link login-mode-toggle mx-auto"
           type="button"
-          onClick={() => { setRegistering(!registering); setError(''); }}
+          onClick={() => { setRegistering(!registering); setConfirmPassword(''); setError(''); }}
         >
           {registering ? 'Already have an account? Sign in' : 'New customer? Create an account'}
         </button>
