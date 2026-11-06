@@ -106,6 +106,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
             {busy ? 'Please wait…' : registering ? 'Create customer account' : 'Sign in'}
           </button>
         </form>
+        <hr className="my-4 text-secondary opacity-25" />
         <button
           className="text-link login-mode-toggle mx-auto"
           type="button"
@@ -113,7 +114,6 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
         >
           {registering ? 'Already have an account? Sign in' : 'New customer? Create an account'}
         </button>
-        <small className="text-secondary d-block text-center mt-4">Ask your administrator for an account.</small>
       </section>
     </main>;
   }
