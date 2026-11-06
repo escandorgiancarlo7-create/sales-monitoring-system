@@ -15,7 +15,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
     { id: 'sales', label: 'Sales transactions', icon: ShoppingCart },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'inventory', label: 'Inventory', icon: Boxes },
-    { id: 'customers', label: 'Customers', icon: ContactRound },
+    { id: 'customers', label: 'Customers', icon: ContactRound, roles: ['admin', 'manager'] },
     { id: 'employees', label: 'Employees', icon: Users, roles: ['admin'] },
     { id: 'reports', label: 'Reports', icon: ChartNoAxesCombined, roles: ['admin', 'manager'] }
   ];
@@ -192,7 +192,7 @@ import { ReportsPage } from './pages/ReportsPage.jsx';
       if (page === 'customers') return <DataPage type="customers" />;
       if (page === 'employees') return <DataPage type="employees" />;
       if (page === 'inventory') return <InventoryPage refreshKey={inventoryRefreshKey} />;
-      if (page === 'sales') return <SalesPage />;
+      if (page === 'sales') return <SalesPage user={user} />;
       if (page === 'reports') return <ReportsPage />;
       return <Dashboard onNavigate={setPage} />;
     })();

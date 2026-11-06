@@ -3,7 +3,8 @@ import { Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { api, dateTime, money } from '../api.js';
 import ProductPicker from '../components/ProductPicker.jsx';
 
-export function SalesPage() {
+export function SalesPage({ user }) {
+  const isCashier = user?.role === 'cashier';
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -37,7 +38,7 @@ export function SalesPage() {
   async function checkout() {
     setSaving(true); setError(''); setNotice('');
     try {
-      const result = await api('/sales', { method: 'POST', body: JSON.stringify({ customer_id: customerId ? Number(customerId) : null, items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })) }) });
+      const result = await api('/sales', { method: 'POST', body: JSON.stringify({ customer_id: isCashier ? null : (customerId ? Number(customerId) : null), items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })) }) });
       setCart([]); setCustomerId(''); setNotice(`Transaction #${result.id} completed for ${money(result.total)}.`); load();
     } catch (err) { setError(err.message); } finally { setSaving(false); }
   }
@@ -54,7 +55,9 @@ export function SalesPage() {
     <div className="sales-layout">
       <article className="panel checkout-panel">
         <div className="panel-header"><div><h2>New transaction</h2><p>Items are priced and inventory is updated securely at checkout.</p></div><div className="metric-icon blue"><ShoppingCart size={19} /></div></div>
-        <label className="form-field mb-3"><span>Customer <small className="text-secondary">(optional)</small></span><select className="form-select" value={customerId} onChange={e => setCustomerId(e.target.value)}><option value="">Walk-in customer</option>{customers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
+        {isCashier ?
+          <div className="form-field mb-3"><span>Customer</span><div className="form-control bg-light">Walk-in Customer</div></div> :
+          <label className="form-field mb-3"><span>Customer <small className="text-secondary">(optional)</small></span><select className="form-select" value={customerId} onChange={e => setCustomerId(e.target.value)}><option value="">Walk-in customer</option>{customers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>}
         <div className="add-product-row">
           <div className="form-field flex-grow-1"><span>Add product</span><ProductPicker products={products} value={productId} onChange={setProductId} disableOutOfStock showPrice /></div>
           <label className="form-field quantity-field"><span>Qty</span><input className="form-control" type="number" min="1" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} /></label>
